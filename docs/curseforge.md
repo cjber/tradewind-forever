@@ -16,17 +16,25 @@ Free, with nothing locked behind it. If it saves you time, you can [sponsor me o
 - Auction house cut and sales per day follow SkillUp Forever's figures and have not been re-checked on the Forever client.
 - The client refuses an addon opening the Professions window, so /tradewind asks you to open it and then shows the tab.
 
-![The Tradewind Forever icon](https://raw.githubusercontent.com/cjber/tradewind-forever/main/docs/screenshots/report.png)
+![Craft now: what your characters can make from their bags, with cost and profit](https://raw.githubusercontent.com/cjber/tradewind-forever/main/docs/screenshots/craft-now.png)
 
-Placeholder art: real captures of the report and the profit window replace these.
+Craft now lists what your characters can make from what they hold, by profit. A count with "+" means the bank has not been seen yet, so the bags alone were counted.
 
-![The Tradewind Forever icon, second placeholder](https://raw.githubusercontent.com/cjber/tradewind-forever/main/docs/screenshots/craft-now.png)
+![A craft row's tooltip: each reagent with what is held, mats worth, sale price and profit per craft](https://raw.githubusercontent.com/cjber/tradewind-forever/main/docs/screenshots/craft-now-tooltip.png)
 
-Placeholder art for the Craft now tab.
+Hover a row for its reagents, what each is worth and where the item sells best.
 
-![The Tradewind Forever icon, third placeholder](https://raw.githubusercontent.com/cjber/tradewind-forever/main/docs/screenshots/characters.png)
+![Shopping: the reagents to buy to make the best rows again](https://raw.githubusercontent.com/cjber/tradewind-forever/main/docs/screenshots/shopping.png)
 
-Placeholder art for the Characters tab.
+Shopping lists the reagents to buy to make the best rows again, priced from the auction house or a merchant.
+
+![Characters: each character's professions, recipes and how long ago its bags and bank were seen](https://raw.githubusercontent.com/cjber/tradewind-forever/main/docs/screenshots/characters.png)
+
+Characters shows what each of your characters knows and how fresh its counts are.
+
+![The /tradewind report](https://raw.githubusercontent.com/cjber/tradewind-forever/main/docs/screenshots/report.png)
+
+`/tradewind report` sums up what the addon has recorded.
 
 These images are generated previews of the Tradewind Forever UI.
 

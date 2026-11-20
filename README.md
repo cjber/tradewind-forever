@@ -67,7 +67,7 @@ For help, ideas and each day's release notes, join [cjber's Workshop on Discord]
 tools/typecheck.sh                              # LuaLS 3.19.1 + multi-value lint
 luacheck . && stylua --check .                  # lint and format
 for spec in tests/*_spec.lua; do luajit "$spec" || exit 1; done
-python3 tools/screenshots.py                    # regenerate docs/screenshots from the game's own art
+python3 tools/check_screenshots.py --record     # after retaking the in-game captures in docs/screenshots
 ```
 
 [tools/README.md](tools/README.md) covers the `Data/` generators and [AGENTS.md](AGENTS.md) the rest, including releasing and contributing. Report security problems privately, as [SECURITY.md](https://github.com/cjber/.github/blob/main/SECURITY.md) describes.
