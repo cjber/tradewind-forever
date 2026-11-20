@@ -103,6 +103,26 @@ local chained = byKey["A-R:4"]
 check(chained and chained.craftable == 3 and chained.matsWorth == nil and chained.profit == nil, "no chain expansion")
 -- B holds 2 of item 10 and so cannot make recipe 2 beyond that; recipe 1 needs 1 of 11 and it holds 1.
 check(byKey["B-R:1"].craftable == 1 and byKey["B-R:2"].craftable == 2, "per-character holdings")
+check(one.bagsOnly == false, "a counted bank is not bags-only")
+
+-- A character whose bank was never seen: rows count the bags, flagged, and Shopping counts those rows.
+local bagsResult = Model.Compute(input({
+	count = function(key, id)
+		local held = HELD[key]
+		return held and (held[id] or 0) or nil, true
+	end,
+}))
+local bagsRow
+for _, row in ipairs(bagsResult.rows) do
+	if row.characterKey == "A-R" and row.spellID == 1 then
+		bagsRow = row
+	end
+end
+check(bagsRow and bagsRow.craftable == 3 and bagsRow.bagsOnly and not bagsRow.holdingsUnknown, "bags-only row")
+local bagsShopping = Model.Shopping(bagsResult.rows, function(id)
+	return PRICES[id]
+end)
+check(bagsShopping.rows > 0 and bagsShopping.bagsOnly == bagsShopping.rows, "shopping counts bags-only rows")
 
 -- Sort: known profit first, descending, unknown last; ties by character, name then spell ID.
 local order = {}

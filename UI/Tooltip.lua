@@ -53,6 +53,15 @@ function Tooltip.Craft(owner, row)
 			1
 		)
 	end
+	if row.bagsOnly then
+		GameTooltip:AddLine(
+			L["Counted from bags only. Open your bank once to count it too."],
+			GREY[1],
+			GREY[2],
+			GREY[3],
+			true
+		)
+	end
 	GameTooltip:AddDoubleLine(
 		L["Mats worth"],
 		row.matsWorth and Format.Money(row.matsWorth) or "?",

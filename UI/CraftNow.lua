@@ -53,7 +53,7 @@ function CraftNow.Fill(line, row)
 	local values = {
 		Format.ItemName(row.itemID),
 		row.character,
-		row.craftable and tostring(row.craftable) or "?",
+		row.craftable and (row.craftable .. (row.bagsOnly and "+" or "")) or "?",
 		row.matsWorth and Format.Money(row.matsWorth) or "?",
 		Format.Profit(row.profit),
 		sold,

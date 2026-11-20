@@ -38,12 +38,15 @@ Holdings.BeginPass()
 check(Holdings.Count("A-R", 10) == nil, "no record is unknown")
 -- Bags only: the bank was never observed, so the total is still unknown.
 check(Holdings.Record(record, false), "bags recorded")
-check(record.bank == nil and Holdings.Count("A-R", 10) == nil, "a bank never observed is unknown")
+local held, bagsOnly = Holdings.Count("A-R", 10)
+check(record.bank == nil and held == 3 and bagsOnly == true, "a bank never observed counts the bags alone, flagged")
+check(select(2, Holdings.Count("A-R", 11)) == true and Holdings.Count("A-R", 11) == 0, "bags-only zero is flagged too")
 -- The bank window open: its scope is the count with the bank less the bags, observed now.
 now = 1100
 check(Holdings.Record(record, true), "bank recorded")
 check(record.bank.counts[10] == 2 and record.bank.counts[11] == 2 and record.bank.observedAt == 1100, "bank scope")
 check(Holdings.Count("A-R", 10) == 5 and Holdings.Count("A-R", 11) == 2, "bags plus bank")
+check(select(2, Holdings.Count("A-R", 10)) == false, "a seen bank is not bags-only")
 check(Holdings.Count("A-R", 12) == 0, "an item held in neither is a known zero")
 -- Bank closed later: recounted from the client's cache, observation time kept.
 now = 1200

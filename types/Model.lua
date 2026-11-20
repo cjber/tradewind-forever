@@ -59,6 +59,7 @@
 ---@field outputQty number
 ---@field craftable? integer
 ---@field holdingsUnknown boolean
+---@field bagsOnly boolean the bank was never seen, so craftable counts the bags alone
 ---@field reagents TWRowReagent[]
 ---@field matsWorth? integer
 ---@field sale? integer
@@ -88,6 +89,7 @@
 ---@field unknown integer
 ---@field stale integer
 ---@field rows integer
+---@field bagsOnly integer rows counted from bags alone, their bank never seen
 
 ---@class TWCharacterSummary
 ---@field name string

@@ -124,10 +124,13 @@ function Holdings.Source(characterKey)
 	return known[characterKey] and "syndicator" or "own"
 end
 
--- The count of `itemID` a character holds in bags and bank, or nil when unknown.
+-- The count of `itemID` a character holds in bags and bank, or nil when unknown. A character whose bank was never
+-- observed counts its bags alone, flagged as bags-only: the true count is at least that, and a character that never
+-- visits a bank still gets counts.
 ---@param characterKey string
 ---@param itemID integer
 ---@return integer?
+---@return boolean? bagsOnly
 function Holdings.Count(characterKey, itemID)
 	if known[characterKey] then
 		local info = syndicator[itemID]
@@ -142,13 +145,15 @@ function Holdings.Count(characterKey, itemID)
 		return entry and (entry.bags + entry.bank) or 0
 	end
 	local record = ns.Store.Get().characters[characterKey]
-	if not record or not record.bags or not record.bank then
+	local bags = record and record.bags
+	if not bags or not bags.observedAt then
 		return nil
 	end
-	if not (record.bags.observedAt and record.bank.observedAt) then
-		return nil
+	local bank = record.bank
+	if not bank or not bank.observedAt then
+		return bags.counts[itemID] or 0, true
 	end
-	return (record.bags.counts[itemID] or 0) + (record.bank.counts[itemID] or 0)
+	return (bags.counts[itemID] or 0) + (bank.counts[itemID] or 0), false
 end
 
 return Holdings

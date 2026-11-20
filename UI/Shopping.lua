@@ -16,9 +16,9 @@ ns.ShoppingTab = ShoppingTab
 ShoppingTab.columns = {
 	{ L["Reagent"], 36, 230, "LEFT" },
 	{ L["To buy"], 270, 60, "RIGHT" },
-	{ L["Each"], 336, 100, "RIGHT" },
-	{ L["Cost"], 442, 100, "RIGHT" },
-	{ L["From"], 546, 38, "LEFT" },
+	{ L["Each"], 336, 94, "RIGHT" },
+	{ L["Cost"], 434, 94, "RIGHT" },
+	{ L["From"], 544, 40, "LEFT" },
 }
 ShoppingTab.empty = L["Nothing to buy for the best rows"]
 ShoppingTab.icons = true
@@ -77,6 +77,9 @@ function ShoppingTab.Footer()
 	end
 	if list.stale > 0 then
 		text = text .. "  " .. L["%d old prices"]:format(list.stale)
+	end
+	if list.bagsOnly > 0 then
+		text = text .. "  " .. L["bank not counted"]
 	end
 	return text
 end

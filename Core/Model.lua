@@ -101,7 +101,8 @@ end
 ---@field characters TWModelCharacter[] in display order
 ---@field recipes table<integer, TWRecipe>
 ---@field item fun(itemID: integer): TWItemView? prices for one item
----@field count fun(characterKey: string, itemID: integer): integer? nil when the holding is unknown
+--- nil when the holding is unknown; the second value is true when only the bags are counted
+---@field count fun(characterKey: string, itemID: integer): integer?, boolean?
 ---@field itemName? fun(itemID: integer): string? for the sort's tie-break only
 ---@field prefetch? fun(itemID: integer) called once per distinct item before rows are built
 ---@field clock? fun(): number milliseconds, for the time budget
@@ -119,11 +120,12 @@ function Model.Row(input, character, spellID, recipe)
 	if not output or not character.professions[recipe.skillLine] then
 		return nil
 	end
-	local reagents, worth, holdingsUnknown, oldest = {}, 0, false, nil
+	local reagents, worth, holdingsUnknown, bagsOnly, oldest = {}, 0, false, false, nil
 	local worthKnown = true
 	for index, reagent in ipairs(recipe.reagents) do
 		local itemID, qty = reagent.itemID, reagent.qty
-		local held = input.count(character.key, itemID)
+		local held, bags = input.count(character.key, itemID)
+		bagsOnly = bagsOnly or bags == true
 		local view = input.item(itemID)
 		-- A reagent that is itself craftable is priced as a plain item: no intermediate crafts.
 		local unit, outlet = Model.Value(view)
@@ -157,6 +159,7 @@ function Model.Row(input, character, spellID, recipe)
 		outputQty = output.qty,
 		craftable = crafts,
 		holdingsUnknown = holdingsUnknown,
+		bagsOnly = bagsOnly,
 		reagents = reagents,
 		matsWorth = mats,
 		sale = sale,
@@ -365,7 +368,8 @@ end
 -- holdings only, at most SHOPPING_ROWS. A row's batch is its craftable count, made again: each reagent needs
 -- qty x crafts, less what the character still holds after the batch they could make now. A reagent two rows share
 -- draws on the same holding once. Lines are summed per reagent and priced at acquisition (`buy`: the auction price or
--- a recorded merchant price); a reagent with no acquisition price stays unknown and out of the total.
+-- a recorded merchant price); a reagent with no acquisition price stays unknown and out of the total. A bags-only row
+-- may list a reagent its bank already holds, so the list counts those rows for the footer to say so.
 ---@param rows TWRow[]
 ---@param item fun(itemID: integer): TWItemView?
 ---@param limit? integer
@@ -374,13 +378,16 @@ function Model.Shopping(rows, item, limit)
 	limit = limit or Model.SHOPPING_ROWS
 	local remaining = {}
 	local lines, order = {}, {}
-	local used = 0
+	local used, bagsOnly = 0, 0
 	for _, row in ipairs(rows) do
 		if used >= limit then
 			break
 		end
 		if row.profit and row.profit > 0 and not row.holdingsUnknown and row.craftable and row.craftable > 0 then
 			used = used + 1
+			if row.bagsOnly then
+				bagsOnly = bagsOnly + 1
+			end
 			for _, reagent in ipairs(row.reagents) do
 				local key = row.characterKey .. "\1" .. reagent.itemID
 				local held = remaining[key]
@@ -429,7 +436,7 @@ function Model.Shopping(rows, item, limit)
 		end
 		return a.itemID < b.itemID
 	end)
-	return { lines = order, total = total, unknown = unknown, stale = stale, rows = used }
+	return { lines = order, total = total, unknown = unknown, stale = stale, rows = used, bagsOnly = bagsOnly }
 end
 
 -- One character's summary line for the Characters tab, from its saved record.
