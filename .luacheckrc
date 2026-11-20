@@ -36,6 +36,7 @@ read_globals = {
 	"TSM_API",
 	"UIErrorsFrame",
 	"UnitClass",
+	"UnitFullName",
 	"UnitGUID",
 	"UnitName",
 	"debugprofilestop",

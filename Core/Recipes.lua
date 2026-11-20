@@ -15,19 +15,34 @@ ns.Recipes = Recipes
 -- linked or guild profession shows someone else's recipes and is never recorded. An alt that has never logged in with
 -- this addon has no record, so it is absent rather than empty.
 
--- This character's key in the saved variables, "Name-Realm"; nil while the client has no name or realm yet.
+-- This character's key in the saved variables: "Name-Realm" where the client names the realm. Forever realms have no
+-- name (GetRealmName returns "") and UnitFullName's second value is the character's surname, which one account can
+-- share across characters on a realm, so there the key is "Name Surname-<server id from the GUID>". Nil while the
+-- client has no name yet.
 ---@return string? key
----@return string? realm
+---@return string? name the display name: with the surname on Forever
+---@return string realm the realm name, "" when the client has none
 function Recipes.CurrentKey()
 	local name = UnitName("player")
+	if not name or name == "" then
+		return nil, nil, ""
+	end
 	local realm = GetNormalizedRealmName()
 	if not realm or realm == "" then
 		realm = ((GetRealmName() or ""):gsub("[%s%-]", ""))
 	end
-	if not name or name == "" or realm == "" then
-		return nil
+	if realm ~= "" then
+		return name .. "-" .. realm, name, realm
 	end
-	return name .. "-" .. realm, realm
+	local server = (UnitGUID("player") or ""):match("^Player%-(%d+)%-")
+	if not server then
+		return nil, nil, ""
+	end
+	local _, surname = UnitFullName("player")
+	if surname and surname ~= "" then
+		name = name .. " " .. surname
+	end
+	return name .. "-" .. server, name, ""
 end
 
 -- Every reagent item any recipe uses, built once from the generated data.
@@ -69,9 +84,8 @@ end
 ---@return TWCharacter? record
 ---@return boolean changed
 function Recipes.RecordCharacter()
-	local key, realm = Recipes.CurrentKey()
-	local name = UnitName("player")
-	if not key or not realm or not name or not ns.Store.Writable() then
+	local key, name, realm = Recipes.CurrentKey()
+	if not key or not name or not ns.Store.Writable() then
 		return nil, false
 	end
 	local record = ns.Store.Character(key)

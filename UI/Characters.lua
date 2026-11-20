@@ -65,7 +65,9 @@ function CharactersTab.Tooltip(line)
 	---@cast summary TWAPICharacter
 	GameTooltip:SetOwner(line, "ANCHOR_RIGHT")
 	GameTooltip:AddLine(summary.name, 1, 1, 1)
-	GameTooltip:AddLine(summary.realm, 0.7, 0.7, 0.7)
+	if summary.realm ~= "" then
+		GameTooltip:AddLine(summary.realm, 0.7, 0.7, 0.7)
+	end
 	if not summary.scanned then
 		GameTooltip:AddLine(L["Open this character's professions to record its recipes."], 1, 0.82, 0, true)
 	end

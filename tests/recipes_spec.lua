@@ -75,6 +75,39 @@ ns.Professions.NoteWindow()
 check(ns.Professions.Canonical("Alquimia", 1) == 171, "a name seen at an open window is learned")
 check(Recipes.CurrentKey() == "Barry-Realm", "character key")
 
+-- Forever realms have no name; the second UnitFullName value is a surname that characters on one realm can share.
+rawset(_G, "UnitGUID", function()
+	return "Player-6941-006325F9"
+end)
+rawset(_G, "UnitFullName", function()
+	return "Barry", "Guns"
+end)
+rawset(_G, "GetNormalizedRealmName", function()
+	return ""
+end)
+rawset(_G, "GetRealmName", function()
+	return ""
+end)
+local foreverKey, foreverName, foreverRealm = Recipes.CurrentKey()
+check(
+	foreverKey == "Barry Guns-6941" and foreverName == "Barry Guns" and foreverRealm == "",
+	"a realm without a name keys by full name and server id"
+)
+rawset(_G, "UnitFullName", function()
+	return "Barry", "Neville"
+end)
+check(Recipes.CurrentKey() == "Barry Neville-6941", "characters sharing a first name on one realm stay apart")
+rawset(_G, "UnitGUID", function()
+	return nil
+end)
+check(Recipes.CurrentKey() == nil, "no key before the client has a GUID")
+rawset(_G, "GetNormalizedRealmName", function()
+	return "Realm"
+end)
+rawset(_G, "GetRealmName", function()
+	return "Realm"
+end)
+
 -- The character record: identity and canonical professions.
 local record, changed = Recipes.RecordCharacter()
 check(changed and record.name == "Barry" and record.realm == "Realm" and record.class == "HUNTER", "identity recorded")
