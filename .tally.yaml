@@ -1,0 +1,12 @@
+# Credential metadata only. Unknown lifecycle facts remain visible as gaps.
+sources:
+  - github: cjber/tradewind-forever
+keys:
+  - id: cf-api-key
+    service: curseforge
+    group: tradewind-forever
+    owner: unknown
+    locations:
+      - github: CF_API_KEY
+    expires: unknown
+    limit: unknown

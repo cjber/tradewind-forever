@@ -1,0 +1,23 @@
+## Interface: 16001
+## Title: Tradewind Forever
+## Notes: One crafting profit list across your characters: what each can make now from its own bags and bank, ranked by profit.
+## Author: cjber
+## Version: @project-version@
+## Category: Professions
+## X-License: GPL-3.0-or-later
+## X-Website: https://github.com/cjber/tradewind-forever
+## X-Donate: https://github.com/sponsors/cjber
+## IconTexture: Interface\AddOns\TradewindForever\media\Icon
+## X-Forever-Icon: Interface\Icons\INV_Misc_Coin_02
+## X-Forever-Core: v1.15.4
+## X-Forever-Core-Embed: 1
+## OptionalDeps: Auctionator, TradeSkillMaster, Syndicator, ForeverCore
+## SavedVariables: TradewindForeverDB
+## AddonCompartmentFunc: TradewindForever_OnAddonCompartmentClick
+
+Core\ForeverRequire.lua
+Core\Require.lua
+Locales\enUS.lua
+Data\Credits.lua
+Core\Report.lua
+Core\Core.lua

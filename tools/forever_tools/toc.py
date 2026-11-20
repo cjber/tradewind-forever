@@ -1,0 +1,98 @@
+"""The runtime Lua files an addon's TOC and XML load graph reaches, and the LuaLS coverage gate over them."""
+
+import json
+import xml.etree.ElementTree as ET
+from pathlib import Path
+
+LOAD_TAGS = {"Include", "Script"}
+PRELOAD_BYTES = 10 * 1024 * 1024
+# forever-core is the ForeverCore checkout an addon's specs and CI load (FOREVER_CORE): its TOC is the dependency's, not
+# the addon's.
+NON_RUNTIME_TOC_ROOTS = {"tools", "tests", "forever-core"}
+
+
+def toc_files(root: Path) -> list[Path]:
+    """Every addon TOC under `root`, excluding development tooling checkouts."""
+    return [
+        toc
+        for toc in sorted(root.rglob("*.toc"))
+        if not any(part.startswith(".") or part == "node_modules" for part in toc.relative_to(root).parts)
+        and toc.relative_to(root).parts[0] not in NON_RUNTIME_TOC_ROOTS
+    ]
+
+
+def _load(path: Path, root: Path, files: set[Path]) -> None:
+    path = path.resolve()
+    path.relative_to(root)
+    if not path.is_file():
+        raise ValueError(f"Missing runtime file: {path}")
+    if path in files:
+        return
+    files.add(path)
+    if path.suffix.lower() == ".xml":
+        for element in ET.parse(path).iter():
+            if element.tag.rsplit("}", 1)[-1] in LOAD_TAGS:
+                for attribute in ("file", "virtualFile"):
+                    if value := element.attrib.get(attribute):
+                        _load(path.parent / value.replace("\\", "/"), root, files)
+
+
+def xml_files(xml_path: Path, root: Path | None = None) -> list[Path]:
+    """Every file one XML document loads, itself included, through nested XML; `root` bounds its paths."""
+    xml_path = xml_path.resolve()
+    root = (root or xml_path.parent).resolve()
+    files: set[Path] = set()
+    _load(xml_path, root, files)
+    return sorted(files)
+
+
+def loaded_files(toc_path: Path, root: Path | None = None) -> list[Path]:
+    """Every file one TOC loads, through nested XML; `root` bounds the paths it may name."""
+    toc_path = toc_path.resolve()
+    root = (root or toc_path.parent).resolve()
+    files: set[Path] = set()
+    for line in toc_path.read_text(encoding="utf-8-sig").splitlines():
+        line = line.strip()
+        if line and not line.startswith("#"):
+            _load(toc_path.parent / line.replace("\\", "/"), root, files)
+    return sorted(files)
+
+
+def runtime_files(root: Path, runtime_dirs: tuple[str, ...] = ()) -> list[Path]:
+    """Every Lua file a TOC loads, through nested XML. Lua under `root` or `runtime_dirs` that none loads is an error.
+
+    `runtime_dirs` are the addon's folders of shipped Lua, never checker fixtures; they differ per addon.
+    """
+    root = root.resolve()
+    files: set[Path] = set()
+    for toc_path in toc_files(root):
+        files.update(loaded_files(toc_path, root))
+    for folder in (root, *(root / name for name in runtime_dirs)):
+        for path in folder.glob("*.lua") if folder == root else folder.rglob("*.lua"):
+            if path.resolve() not in files:
+                raise ValueError(f"Runtime Lua is not loaded by a TOC/XML: {path.relative_to(root)}")
+    return sorted(path for path in files if path.suffix.lower() == ".lua")
+
+
+def check_coverage(root: Path, runtime_dirs: tuple[str, ...] = ()) -> int:
+    """Fail if the LuaLS configuration could silently omit a TOC-loaded Lua file."""
+    root = root.resolve()
+    config = json.loads((root / ".luarc.json").read_text())
+    if config.get("workspace.useGitIgnore", True):
+        raise ValueError("Set workspace.useGitIgnore=false so runtime coverage does not depend on local git ignores")
+    files = runtime_files(root, runtime_dirs)
+    if not files:
+        raise ValueError("No TOC-loaded Lua files found")
+    for path in files:
+        relative = path.relative_to(root)
+        for ignored in config.get("workspace.ignoreDir", []):
+            if relative.match(ignored) or any(parent.match(ignored) for parent in relative.parents):
+                raise ValueError(f"Runtime file excluded by {ignored}: {relative}")
+        if path.stat().st_size > PRELOAD_BYTES:
+            raise ValueError(f"Runtime file exceeds LuaLS's hard 10 MiB limit: {relative}")
+        if path.stat().st_size / 1000 >= config["workspace.preloadFileSize"]:
+            raise ValueError(f"Runtime file exceeds workspace.preloadFileSize: {relative}")
+    if len(files) > config["workspace.maxPreload"]:
+        raise ValueError("Runtime files exceed workspace.maxPreload")
+    print(f"LuaLS coverage: {len(files)} TOC-loaded Lua files, including generated data and child addons")
+    return 0

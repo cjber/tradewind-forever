@@ -1,0 +1,4 @@
+{
+  "policy": "Only explicit reviewed phrase-to-widget FontObject contracts are checked. Review producer source, callers, template inheritance and later font changes before refreshing sha256. Buttons bind every declared font state. Font objects resolve through the pinned client font mappings; translated text never selects a font. Dynamic game data, tooltips, menus, chat and unlisted or uncertain consumers have no coverage claim. Empty bindings pin reviewed dependencies or exclusions, not glyph coverage.",
+  "producers": []
+}

@@ -1,0 +1,53 @@
+#!/bin/sh
+set -eu
+
+cd "$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)"
+# The annotation checkout and the LuaLS version come from tools/toolchain.json, synced from ForeverCore: the one
+# place either is pinned, and the file CI installs LuaLS from.
+pins=$(python3 -c 'import json; t = json.load(open("tools/toolchain.json"))["tools"]; print(t["annotations"]["commit"], t["luals"]["version"])')
+revision=${pins% *}
+luals=${pins#* }
+library=.types/vscode-wow-api
+if [ ! -d "$library/.git" ]; then
+    mkdir -p .types
+    git init -q "$library"
+    git -C "$library" remote add origin https://github.com/Ketho/vscode-wow-api.git
+    git -C "$library" fetch --depth=1 origin "$revision"
+    git -C "$library" checkout -q --detach FETCH_HEAD
+fi
+if [ "$(git -C "$library" rev-parse HEAD)" != "$revision" ]; then
+    echo "$library: expected pinned revision $revision" >&2
+    exit 1
+fi
+# The gitlink pins FrameXML too; never follow the submodule's moving branch.
+git -C "$library" submodule update --init --depth=1 Annotations/FrameXML
+if [ -n "$(git -C "$library" status --porcelain --untracked-files=all)" ]; then
+    echo "$library: annotations must match the pinned checkout" >&2
+    exit 1
+fi
+if [ "$(lua-language-server --version)" != "$luals" ]; then
+    echo "typecheck requires lua-language-server $luals on PATH (tools/toolchain.json)" >&2
+    exit 1
+fi
+
+python3 tools/forever_tools/sync.py check
+python3 -m unittest discover -s tools -p '*_test.py'
+python3 tools/typecheck_coverage.py
+python3 tools/lint_multivalue.py
+python3 tools/lint_secret.py
+python3 tools/lint_client_calls.py
+python3 tools/check_font_glyphs.py
+python3 tools/check_editorconfig.py
+# --release, not the plain check: a translation gap fails the PR, not the release. Every shipped
+# locale is at 100%, so adding an English string means translating it in the same change.
+python3 tools/check_locales.py --release
+python3 tools/check_family.py
+python3 tools/check_store_page.py
+python3 -m tools.phrases --check
+# A fresh output path prevents a crashed checker from reusing an earlier green report.
+report=$(mktemp -d "${TMPDIR:-/tmp}/tradewind-typecheck.XXXXXX")
+trap 'rm -rf "$report"' EXIT HUP INT TERM
+status=0
+lua-language-server --check . --checklevel=Information --check_format=json \
+    --check_out_path="$report/diagnostics.json" >"$report/server.log" 2>&1 || status=$?
+python3 tools/typecheck_report.py "$report/diagnostics.json" "$status" "$report/server.log"
