@@ -2,10 +2,8 @@
 """Regenerate committed data twice and require fresh, byte-stable results."""
 
 import argparse
-import shutil
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 from forever_tools import generated
@@ -15,7 +13,6 @@ from forever_tools.report import Subset
 ROOT = Path(__file__).resolve().parent.parent
 OUTPUTS = ["tools/data/Thresholds.lua", "Data/Recipes.lua"]
 GENERATORS = ["gen_thresholds.py", "gen_recipes.py"]
-SEED_FILES = ["tools/gen_thresholds.py", "tools/gen_recipes.py", "tools/data/Thresholds.lua", "Data/Recipes.lua"]
 SUBSETS = [Subset("ns.RecipeData", "ns.Thresholds", "recipe data covers threshold recipes only")]
 
 
@@ -29,7 +26,7 @@ def validate_data(root: Path) -> None:
     recipes = recipe_tables.get("ns.RecipeData")
     prices = recipe_tables.get("ns.ItemSellPrices")
     thresholds = threshold_tables.get("ns.Thresholds")
-    if not all(isinstance(table, Table) for table in (recipes, prices, thresholds)):
+    if not (isinstance(recipes, Table) and isinstance(prices, Table) and isinstance(thresholds, Table)):
         raise SystemExit("Generated data is missing RecipeData, ItemSellPrices or Thresholds")
     if not set(recipes.keyed) <= set(thresholds.keyed):
         missing = sorted(set(recipes.keyed) - set(thresholds.keyed))
@@ -93,47 +90,17 @@ def regenerate(scratch: Path, offline: bool) -> None:
         )
 
 
-def seed_generated(root: Path, scratch: Path) -> None:
-    for name in SEED_FILES:
-        destination = scratch / name
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(root / name, destination)
-
-
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--offline", action="store_true")
-    args = parser.parse_args()
-    shared = ROOT / "tools/.cache"
-    shared.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix="tradewind-generated-") as temporary:
-        with generated.scratch_tree(ROOT, shared, "tools/.cache", "tradewind-generated-", Path(temporary)) as fresh:
-            with generated.scratch_tree(
-                ROOT, shared, "tools/.cache", "tradewind-generated-", Path(temporary)
-            ) as second:
-                seed_generated(ROOT, fresh)
-                seed_generated(ROOT, second)
-                expected = outputs(fresh)
-                regenerate(fresh, args.offline)
-                regenerate(second, True)
-                actual = outputs(fresh)
-                generated.compare(
-                    expected,
-                    actual,
-                    "Stale generated files; run the canonical generators",
-                    subsets=SUBSETS,
-                )
-                same_inputs = generated.same_tree(fresh / "tools/.cache", second / "tools/.cache")
-                if not same_inputs:
-                    regenerate(fresh, True)
-                again = outputs(second if same_inputs else fresh)
-                generated.compare(
-                    actual,
-                    again,
-                    "Regeneration is not byte-for-byte reproducible",
-                    subsets=SUBSETS,
-                )
-    print("Generated data is fresh and byte-stable.")
+    generated.check_generated(
+        ROOT,
+        outputs=outputs,
+        regenerate=regenerate,
+        offline=parser.parse_args().offline,
+        success="Generated data is fresh and byte-stable.",
+        subsets=SUBSETS,
+    )
 
 
 if __name__ == "__main__":

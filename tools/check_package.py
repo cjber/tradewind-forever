@@ -17,9 +17,15 @@ except ModuleNotFoundError:
     from forever_tools import package
 
 ROOT = Path(__file__).resolve().parent.parent
+# toc_spec reads tools/forever-core.txt, which is tooling and never ships.
+REPO_ONLY = {"tests/toc_spec.lua"}
 POLICY = package.Policy(
     addons=("TradewindForever",),
-    specs=tuple(sorted(p.relative_to(ROOT).as_posix() for p in ROOT.glob("tests/*_spec.lua")))
+    specs=tuple(
+        spec
+        for spec in sorted(p.relative_to(ROOT).as_posix() for p in ROOT.glob("tests/*_spec.lua"))
+        if spec not in REPO_ONLY
+    )
     + ("tests/sim/exercise_scenario.lua", "tests/embedded_scenario.lua"),
     support=("tests", "tools/forever_sim"),
 )
