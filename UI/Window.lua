@@ -123,15 +123,22 @@ local function Line(index)
 	return line
 end
 
--- Places a line's columns where the selected tab declares them.
+-- How far the columns stretch: a tab declares them for the 584-wide list, and the list fills the scroll frame, which
+-- the profession window can make wider.
+local function Stretch()
+	return math.max(1, Window.list:GetWidth() / LIST_WIDTH)
+end
+
+-- Places a line's columns where the selected tab declares them, stretched across the list.
 local function Layout(line)
 	local columns = selected.tab.columns
+	local stretch = Stretch()
 	for index, text in ipairs(line.cols) do
 		local column = columns[index]
 		text:ClearAllPoints()
 		if column then
-			text:SetPoint("TOPLEFT", column[2], -8)
-			text:SetWidth(column[3])
+			text:SetPoint("TOPLEFT", column[2] * stretch, -8)
+			text:SetWidth(column[3] * stretch)
 			text:SetJustifyH(column[4])
 			text:Show()
 		else
@@ -142,12 +149,13 @@ end
 
 local function Headers()
 	local columns = selected.tab.columns
+	local stretch = Stretch()
 	for index, label in ipairs(Window.headers) do
 		local column = columns[index]
 		label:ClearAllPoints()
 		if column then
-			label:SetPoint("TOPLEFT", column[2] + 4, -10)
-			label:SetWidth(column[3])
+			label:SetPoint("TOPLEFT", column[2] * stretch + 4, -10)
+			label:SetWidth(column[3] * stretch)
 			label:SetJustifyH(column[4])
 			label:SetText(column[1])
 			label:Show()
@@ -302,6 +310,13 @@ local function Attach()
 	Window.list = CreateFrame("Frame", nil, Window.scroll)
 	Window.list:SetSize(LIST_WIDTH, 1)
 	Window.scroll:SetScrollChild(Window.list)
+	-- The list fills the scroll frame's width, and the columns follow it.
+	Window.scroll:HookScript("OnSizeChanged", function(_, width)
+		Window.list:SetWidth(math.max(LIST_WIDTH, width))
+		if page and page:IsShown() then
+			Window.Refresh()
+		end
+	end)
 	Window.lines = {}
 	Window.empty = Text(inset, "GameFontDisableSmall", 12, -42, 560)
 	Window.footer = Text(page, "GameFontHighlight", 22, -0, 400)

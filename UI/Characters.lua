@@ -68,6 +68,10 @@ function CharactersTab.Tooltip(line)
 	if summary.realm ~= "" then
 		GameTooltip:AddLine(summary.realm, 0.7, 0.7, 0.7)
 	end
+	for _, profession in ipairs(summary.professions) do
+		local name = profession.name or ns.Professions.Name(profession.skillLineId)
+		GameTooltip:AddDoubleLine(name, ("%d/%d"):format(profession.rank, profession.max), 1, 1, 1, 1, 1, 1)
+	end
 	if not summary.scanned then
 		GameTooltip:AddLine(L["Open this character's professions to record its recipes."], 1, 0.82, 0, true)
 	end
