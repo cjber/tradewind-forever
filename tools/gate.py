@@ -74,6 +74,11 @@ STEPS = (
     Step("api docs", ("python3", "tools/check_api_docs.py"), ("*API*.lua", "docs/api.md")),
     Step("menu scroll", ("python3", "tools/check_menu_scroll.py"), LUA),
     Step("screenshots", ("python3", "tools/check_screenshots.py")),
+    Step(
+        "generated",
+        ("python3", "tools/check_generated.py", "--offline"),
+        ("Data/*", "tools/data/*", "tools/gen_*.py", "tools/check_generated.py"),
+    ),
     Step("phrases", ("python3", "-m", "tools.phrases", "--check"), ("Locales/*",) + LUA),
     Step("repo rules", ("python3", "tools/repo_rules.py")),
     # The vendored copies match their MANIFEST.json, offline.

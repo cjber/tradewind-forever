@@ -23,6 +23,7 @@ licence, and whether any of it reaches the zip players install. The addon itself
 
 | Input | Used for | Pin | Licence |
 |---|---|---|---|
+| [WoW: Forever and Classic Era client tables, via wago.tools](https://wago.tools) | Skill thresholds, profession membership, reagents, recipe outputs and positive vendor sell-back prices in `tools/data/Thresholds.lua` and `Data/Recipes.lua`; the generators read `SkillLineAbility`, `SkillLine`, `SpellReagents`, `SpellEffect`, `ItemSparse`, `SpellName`, `ItemEffect` and `ItemXItemEffect` | `BUILD` and `TEACH_BUILD` in `tools/gen_thresholds.py` | Blizzard Entertainment's game data; build-only, never bundled |
 | [Ketho's WoW API annotations](https://github.com/Ketho/vscode-wow-api) | lua-language-server types in `tools/typecheck.sh` | `revision` in `tools/typecheck.sh` | MIT |
 | [FrameXML annotations](https://github.com/NumyAddon/FramexmlAnnotations) | FrameXML types, the Ketho checkout's `Annotations/FrameXML` submodule | The gitlink in that Ketho revision | MIT |
 | [forever_tools](https://github.com/cjber/forever-core/tree/main/.agents/skills/wow-forever-addon/tooling/forever_tools) | Shared lints and release checks, vendored in `tools/forever_tools/` | `revision` in `tools/forever_tools/MANIFEST.json` | MIT |

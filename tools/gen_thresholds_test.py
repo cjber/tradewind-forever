@@ -1,0 +1,253 @@
+import re
+import tempfile
+import unittest
+from pathlib import Path
+from unittest import mock
+
+import gen_thresholds
+
+
+class Db2Test(unittest.TestCase):
+    def rows(self, text, columns=("ID", "Value")):
+        with tempfile.TemporaryDirectory() as directory:
+            cache = Path(directory)
+            (cache / f"T-{gen_thresholds.BUILD}.csv").write_text(text, encoding="utf-8")
+            with mock.patch.object(gen_thresholds, "CACHE", cache):
+                return gen_thresholds.db2("T", columns, offline=True)
+
+    def test_valid_rows_keep_their_strings(self):
+        self.assertEqual(self.rows("ID,Value\n1,2\n3,4\n"), [{"ID": "1", "Value": "2"}, {"ID": "3", "Value": "4"}])
+
+    def test_rejects_duplicate_columns(self):
+        with self.assertRaisesRegex(ValueError, "duplicate columns"):
+            self.rows("ID,Value,Value\n1,2,3\n")
+
+    def test_rejects_duplicate_ids_and_short_rows(self):
+        with self.assertRaisesRegex(ValueError, "duplicate ID"):
+            self.rows("ID,Value\n1,2\n1,3\n")
+        with self.assertRaisesRegex(ValueError, "malformed CSV row"):
+            self.rows("ID,Value\n1\n")
+
+    def test_rejects_missing_columns_and_empty_exports(self):
+        with self.assertRaisesRegex(ValueError, "missing required columns"):
+            self.rows("ID\n1\n")
+        with self.assertRaisesRegex(ValueError, "empty export"):
+            self.rows("ID,Value\n")
+
+    def test_invalid_refresh_preserves_cached_source(self):
+        with tempfile.TemporaryDirectory() as directory:
+            cache = Path(directory)
+            path = cache / f"T-{gen_thresholds.BUILD}.csv"
+            original = b"ID,Value\n1,2\n"
+            path.write_bytes(original)
+            with (
+                mock.patch.object(gen_thresholds, "CACHE", cache),
+                mock.patch.object(gen_thresholds.wago, "read_source", return_value=(b"ID,Value,Value\n1,2,3\n", True)),
+                self.assertRaisesRegex(ValueError, "duplicate columns"),
+            ):
+                gen_thresholds.db2("T", ("ID", "Value"), refresh=True)
+            self.assertEqual(path.read_bytes(), original)
+
+
+class ThresholdSourceTest(unittest.TestCase):
+    def test_forever_requirement_is_used_unchanged(self):
+        row = {
+            "SkillLine": "164",
+            "Spell": "9985",
+            "MinSkillLineRank": "1",
+            "TrivialSkillLineRankLow": "155",
+            "TrivialSkillLineRankHigh": "185",
+        }
+        emitted, _, _ = gen_thresholds.generate(
+            [row],
+            {},
+            {164},
+            {9985: "Bronze Warhammer"},
+            {9985: {24}},
+        )
+        self.assertEqual(emitted[9985], (1, 155, 170, 185))
+
+    @staticmethod
+    def row(spell, orange, yellow, grey, skill_line="164"):
+        return {
+            "SkillLine": skill_line,
+            "Spell": str(spell),
+            "MinSkillLineRank": str(orange),
+            "TrivialSkillLineRankLow": str(yellow),
+            "TrivialSkillLineRankHigh": str(grey),
+        }
+
+    def emit(self, rows, classic=(), scrolls=None, effects=None):
+        classic = gen_thresholds.ability_values([self.row(*values) for values in classic])
+        spells = {int(row["Spell"]) for row in rows}
+        effects = effects or {spell: {24} for spell in spells}
+        emitted, _, sources = gen_thresholds.generate(rows, {}, {164}, {}, effects, classic, scrolls or {})
+        return emitted, sources
+
+    # Issue #107: Forever moved these ranges 25 points down and left Classic's minimum on them.
+    def test_stale_minimum_moves_with_its_range(self):
+        emitted, sources = self.emit(
+            [self.row(2666, 80, 85, 125), self.row(2672, 120, 125, 155)],
+            classic=[(2666, 80, 110, 150), (2672, 120, 150, 180)],
+        )
+        self.assertEqual(emitted[2666], (55, 85, 105, 125))
+        self.assertEqual(emitted[2672], (95, 125, 140, 155))
+        self.assertEqual(sources[2666], "client orange 80: shifted")
+
+    def test_minimum_above_yellow_is_never_emitted(self):
+        emitted, _ = self.emit(
+            [self.row(2674, 125, 100, 115), self.row(2665, 75, 40, 55)],
+            classic=[(2674, 125, 125, 140), (2665, 75, 65, 80)],
+        )
+        self.assertEqual(emitted[2674], (100, 100, 107, 115))
+        # Moved as far, 50 is still above yellow: no number the sources agree on, so the placeholder.
+        self.assertEqual(emitted[2665], (1, 40, 47, 55))
+
+    def test_pattern_requirement_replaces_placeholder_and_stale_minimum(self):
+        emitted, sources = self.emit(
+            [self.row(2667, 90, 95, 135), self.row(2158, 1, 95, 125), self.row(22757, 1, 275, 295)],
+            classic=[(2667, 90, 120, 160)],
+            scrolls={2667: (2881, 55), 2158: (5083, 65), 22757: (18260, 300)},
+        )
+        self.assertEqual(emitted[2667], (55, 95, 115, 135))
+        self.assertEqual(sources[2667], "client orange 90: scroll")
+        self.assertEqual(emitted[2158], (65, 95, 110, 125))
+        # A pattern asking more than yellow cannot start the orange range.
+        self.assertEqual(emitted[22757], (1, 275, 285, 295))
+
+    def test_deprecated_pattern_teaches_nobody(self):
+        # Enchant Cloak - Minor Protection (7771): Forever's only item for it is the deprecated
+        # "Formula: Imbue Cloak - Protection" (6345, asks 90), while a trainer teaches it at 70.
+        items = [
+            {"ID": "6345", "RequiredSkill": "333", "RequiredSkillRank": "90", "Flags_0": "80"},
+            {"ID": "4295", "RequiredSkill": "165", "RequiredSkillRank": "125", "Flags_0": "16"},
+            {"ID": "5974", "RequiredSkill": "165", "RequiredSkillRank": "160", "Flags_0": "64"},
+        ]
+        effects = [{"ID": "1", "SpellID": "7771"}, {"ID": "2", "SpellID": "7153"}, {"ID": "3", "SpellID": "7153"}]
+        links = [
+            {"ItemID": "6345", "ItemEffectID": "1"},
+            {"ItemID": "4295", "ItemEffectID": "2"},
+            {"ItemID": "5974", "ItemEffectID": "3"},
+        ]
+        scrolls = gen_thresholds.scroll_requirements({7771, 7153}, items, effects, links)
+        self.assertEqual(scrolls, {7153: (5974, 160)})
+        emitted, _ = self.emit([self.row(7771, 1, 110, 150)], classic=[(7771, 1, 110, 150)], scrolls=scrolls)
+        self.assertEqual(emitted[7771], (1, 110, 130, 150))
+
+    def test_real_client_minimum_is_kept(self):
+        emitted, sources = self.emit(
+            [self.row(7, 40, 50, 100), self.row(8, 50, 70, 100)],
+            classic=[(7, 40, 50, 100), (8, 60, 90, 120)],
+            scrolls={7: (1, 30)},
+        )
+        self.assertEqual(emitted[7], (40, 50, 75, 100))
+        self.assertEqual(emitted[8], (50, 70, 85, 100))
+        self.assertEqual(sources, {})
+
+    # Issue #688: Smelt Steel, Mithril, Truesilver, Dark Iron and Thorium have grey equal to yellow in the client
+    # data. That is a range with no yellow or green band, not a contradiction.
+    def test_grey_equal_to_yellow_keeps_its_range(self):
+        emitted, _ = self.emit([self.row(10097, 1, 175, 175)])
+        self.assertEqual(emitted[10097], (1, 175, 175, 175))
+
+    def test_grey_below_yellow_is_still_skipped(self):
+        emitted, _ = self.emit([self.row(10097, 1, 175, 170)])
+        self.assertEqual(emitted, {})
+
+    def test_a_skill_line_ability_with_no_range_is_skipped(self):
+        emitted, _ = self.emit([self.row(2018, 1, 0, 0)])
+        self.assertEqual(emitted, {})
+
+    def test_an_equal_range_that_is_not_a_recipe_is_skipped(self):
+        # Engineering's 1/1 profession ability sets the skill line; it is not craftable.
+        emitted, _ = self.emit([self.row(1235244, 1, 1, 1)], effects={1235244: {95, 118}})
+        self.assertEqual(emitted, {})
+
+    def test_shifts_only_ranges_that_moved_together(self):
+        classic = gen_thresholds.ability_values(
+            [self.row(1, 1, 110, 150), self.row(2, 1, 50, 100), self.row(3, 1, 50, 100)]
+        )
+        forever = [self.row(1, 1, 85, 125), self.row(2, 1, 50, 100), self.row(3, 1, 40, 95)]
+        self.assertEqual(gen_thresholds.shifts(forever, classic), {1: -25})
+
+
+class RetiredRecipeTest(unittest.TestCase):
+    # Forever 70425 took the Tinkerbox schematics and the Tinkerbox out of ItemSparse (they stay in Item), so nobody
+    # can learn or make Tinkerbox (1226206) or Tinker: Teleport (1226210, taught through a LEARN_SPELL and making
+    # no item, but using the Tinkerbox as a reagent).
+    RETIRED = {1226206: "Tinkerbox", 1226210: "Tinker: Teleport"}
+
+    @staticmethod
+    def effect(spell, kind, item=0, trigger=0):
+        return {
+            "SpellID": str(spell),
+            "DifficultyID": "0",
+            "Effect": str(kind),
+            "EffectItemType": str(item),
+            "EffectTriggerSpell": str(trigger),
+        }
+
+    def check(self, sparse):
+        effects = [
+            self.effect(1226206, gen_thresholds.CREATE_ITEM, item=238737),
+            self.effect(1229402, gen_thresholds.LEARN_SPELL, trigger=1226210),
+        ]
+        item_effects = [{"ID": "1", "SpellID": "1226206"}, {"ID": "2", "SpellID": "1229402"}]
+        links = [{"ItemID": "238782", "ItemEffectID": "1"}, {"ItemID": "240018", "ItemEffectID": "2"}]
+        reagents = [
+            {"SpellID": "1226206", "Reagent_0": "10558", **{f"Reagent_{i}": "0" for i in range(1, 8)}},
+            {
+                "SpellID": "1226210",
+                "Reagent_0": "238737",
+                "Reagent_1": "15994",
+                **{f"Reagent_{i}": "0" for i in range(2, 8)},
+            },
+        ]
+        spells = {1226206, 1226210}
+        gen_thresholds.check_retired(self.RETIRED, spells, effects, set(sparse), item_effects, links, reagents)
+
+    def test_retired_recipes_stay_out_while_nothing_teaches_or_makes_them(self):
+        # Their reagents being in the game doesn't bring them back: 1226210 needs the Tinkerbox too.
+        self.check({10558, 15994})
+
+    def test_a_returning_pattern_product_or_reagent_set_fails_the_run(self):
+        for back in ({238782}, {240018}, {238737}):
+            with self.assertRaises(ValueError, msg=back):
+                self.check({10558, 15994} | back)
+
+    def test_a_stale_entry_fails_the_run(self):
+        with self.assertRaises(ValueError):
+            gen_thresholds.check_retired(self.RETIRED, {1226206}, [], set(), [], [], [])
+
+    def test_a_retired_recipe_is_not_emitted(self):
+        rows = [ThresholdSourceTest.row(spell, 1, 260, 280) for spell in (1226206, 3001)]
+        effects = {1226206: {24}, 3001: {24}}
+        emitted, coverage, _ = gen_thresholds.generate(rows, {}, {164}, {}, effects, retired={1226206})
+        self.assertEqual(set(emitted), {3001})
+        self.assertIn("retired=1", coverage[0])
+
+
+class GeneratedThresholdsTest(unittest.TestCase):
+    def test_retired_recipes_are_left_out_and_obtainable_ones_kept(self):
+        content = (gen_thresholds.OUTPUT).read_text(encoding="utf-8")
+        self.assertLessEqual(set(range(1226206, 1226213)), set(gen_thresholds.RETIRED))
+        for spell in gen_thresholds.RETIRED:
+            self.assertNotIn(f"\t[{spell}] =", content)
+        # A missing ItemSparse row alone is not retirement: Ironvine Breastplate (plans from Vargus, Cenarion
+        # Circle) and Revealing Draught (new in Forever) have none for their plan or product and stay.
+        for spell in (28461, 1250775):
+            self.assertIn(f"\t[{spell}] =", content)
+
+    # Model.Get answers nil for a row that is not ordered, and the recipe shows "?". Equal yellow, green and grey
+    # are a real range with no yellow or green band (#688), so green may equal grey.
+    def test_every_bundled_row_is_ordered(self):
+        content = (gen_thresholds.OUTPUT).read_text(encoding="utf-8")
+        rows = re.findall(r"^\t\[(\d+)\] = \{ (\d+), (\d+), (\d+), (\d+) \},", content, re.MULTILINE)
+        self.assertGreater(len(rows), 1000)
+        for spell, *values in rows:
+            orange, yellow, green, grey = map(int, values)
+            self.assertTrue(1 <= orange <= yellow <= green <= grey, f"{spell}: {values}")
+
+
+if __name__ == "__main__":
+    unittest.main()
