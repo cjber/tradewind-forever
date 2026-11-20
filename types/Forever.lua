@@ -18,3 +18,7 @@ TSM_API = nil
 
 ---@type {API: table}?
 Syndicator = nil
+
+-- The client's Professions window, as ForeverCore's shared types describe it (CraftingPage, BookPage and the tabs).
+---@type ForeverProfessionsWindow
+ProfessionsFrame = nil

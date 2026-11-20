@@ -9,6 +9,7 @@ local L = ns.L
 local Format = ns.Format
 
 ---@class TWWindow
+---@field lines TWLine[]
 local Window = {}
 ns.Window = Window
 
@@ -72,6 +73,9 @@ local function NativePagesStrata()
 end
 
 local function RaiseAboveNativePages()
+	if not page then
+		return
+	end
 	local strata, level = NativePagesStrata()
 	page:SetFrameStrata(strata)
 	page:SetFrameLevel(level + 1)
@@ -93,7 +97,7 @@ end
 local function Line(index)
 	local line = Window.lines[index]
 	if not line then
-		line = CreateFrame("Button", nil, Window.list)
+		line = CreateFrame("Button", nil, Window.list) --[[@as TWLine]]
 		line:SetPoint("TOPLEFT", 4, -(index - 1) * ROW_HEIGHT)
 		line:SetPoint("TOPRIGHT", -4, -(index - 1) * ROW_HEIGHT)
 		line:SetHeight(ROW_HEIGHT)

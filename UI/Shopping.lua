@@ -38,7 +38,7 @@ function ShoppingTab.Entries(result, query)
 	return shown
 end
 
----@param line Button
+---@param line TWLine
 ---@param entry TWShoppingLine
 function ShoppingTab.Fill(line, entry)
 	line.itemID = entry.itemID
@@ -58,9 +58,11 @@ function ShoppingTab.Fill(line, entry)
 	line.entry = entry
 end
 
----@param line Button
+---@param line TWLine
 function ShoppingTab.Tooltip(line)
-	ns.Tooltip.Shopping(line, line.entry)
+	local entry = line.entry
+	---@cast entry TWShoppingLine
+	ns.Tooltip.Shopping(line, entry)
 end
 
 ---@return string

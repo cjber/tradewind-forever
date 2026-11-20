@@ -43,7 +43,7 @@ function CraftNow.Entries(result, query)
 	return shown
 end
 
----@param line Button
+---@param line TWLine
 ---@param row TWRow
 function CraftNow.Fill(line, row)
 	line.itemID = row.itemID
@@ -64,9 +64,11 @@ function CraftNow.Fill(line, row)
 	line.entry = row
 end
 
----@param line Button
+---@param line TWLine
 function CraftNow.Tooltip(line)
-	ns.Tooltip.Craft(line, line.entry)
+	local row = line.entry
+	---@cast row TWRow
+	ns.Tooltip.Craft(line, row)
 end
 
 -- The footer: what making every profitable row is worth, and how many rows could not be priced.

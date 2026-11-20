@@ -222,6 +222,7 @@ function ns.CharacterList()
 	local list = {}
 	for key, record in pairs(ns.Store.Get().characters) do
 		local summary = ns.Model.Summary(record, now)
+		---@cast summary TWAPICharacter
 		summary.key = key
 		list[#list + 1] = summary
 	end

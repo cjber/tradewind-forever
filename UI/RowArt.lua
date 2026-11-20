@@ -13,6 +13,7 @@ ns.RowArt = RowArt
 -- Our rows are shorter: stretching the texture to them squashes the art vertically (WFA-27).
 local NATIVE_HEIGHT = 69
 local ICON_SIZE = 24 -- the row's icon region, square
+local UNKNOWN_ICON = 134400 -- the question mark the client shows for an item it has not cached yet
 
 -- Draw a row atlas at its native height and scale the whole texture down to the row. The atlas's horizontal-only
 -- slice still stretches its middle by design; its height never stretches. Offsets follow the texture's scale.
@@ -39,10 +40,10 @@ function RowArt.RowAtlas(row, atlas, layer, blend, x, y)
 end
 
 -- An item's icon in a row, wearing the Cooldown Manager's mask and overlay (ForeverCore's shared icon frame).
----@param line table the row, with its `icon` texture
+---@param line TWLine
 ---@param itemID integer
 function RowArt.ItemIcon(line, itemID)
-	line.overlay = ForeverCore.Art.CooldownIcon(line.icon, C_Item.GetItemIconByID(itemID), ICON_SIZE)
+	line.overlay = ForeverCore.Art.CooldownIcon(line.icon, C_Item.GetItemIconByID(itemID) or UNKNOWN_ICON, ICON_SIZE)
 	line.overlay:Show()
 end
 

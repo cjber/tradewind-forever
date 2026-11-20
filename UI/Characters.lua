@@ -23,7 +23,7 @@ CharactersTab.columns = {
 CharactersTab.empty = L["No character recorded yet"]
 CharactersTab.icons = false
 
----@param result TWResult
+---@param _ TWResult
 ---@param query string folded (ForeverCore.Text.Fold)
 ---@return TWAPICharacter[]
 function CharactersTab.Entries(_, query)
@@ -36,7 +36,7 @@ function CharactersTab.Entries(_, query)
 	return shown
 end
 
----@param line Button
+---@param line TWLine
 ---@param summary TWAPICharacter
 function CharactersTab.Fill(line, summary)
 	line.itemID = nil
@@ -59,9 +59,10 @@ function CharactersTab.Fill(line, summary)
 	line.entry = summary
 end
 
----@param line Button
+---@param line TWLine
 function CharactersTab.Tooltip(line)
 	local summary = line.entry
+	---@cast summary TWAPICharacter
 	GameTooltip:SetOwner(line, "ANCHOR_RIGHT")
 	GameTooltip:AddLine(summary.name, 1, 1, 1)
 	GameTooltip:AddLine(summary.realm, 0.7, 0.7, 0.7)

@@ -41,7 +41,7 @@
 ---@field soldPerDay? number
 ---@field buy? number copper to acquire one
 ---@field buySource? "auction"|"merchant"
----@field merchant? number
+---@field merchant? string the key of the merchant that charged `buy`
 
 ---@class TWRowReagent
 ---@field itemID integer
@@ -94,7 +94,17 @@
 ---@field realm string
 ---@field class? string
 ---@field professions {skillLineId: integer, name?: string, rank: integer, max: integer}[]
----@field scanned boolean
----@field recipes integer
----@field bagsAge? integer
----@field bankAge? integer
+---@field scanned boolean the character's recipes were recorded
+---@field recipes integer recipes recorded
+---@field bagsAge? integer seconds since the bags were last seen
+---@field bankAge? integer seconds since the bank was last seen
+
+-- A list row: the Button the window builds once and each tab fills with its own entry.
+---@class TWLine : Button
+---@field background Texture
+---@field hover Texture
+---@field icon Texture
+---@field overlay? Frame the item icon's Cooldown Manager frame
+---@field cols FontString[]
+---@field itemID? integer
+---@field entry? TWRow|TWShoppingLine|TWAPICharacter what the tab last filled the row with

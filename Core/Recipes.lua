@@ -16,7 +16,8 @@ ns.Recipes = Recipes
 -- this addon has no record, so it is absent rather than empty.
 
 -- This character's key in the saved variables, "Name-Realm"; nil while the client has no name or realm yet.
----@return string?
+---@return string? key
+---@return string? realm
 function Recipes.CurrentKey()
 	local name = UnitName("player")
 	local realm = GetNormalizedRealmName()
@@ -69,7 +70,8 @@ end
 ---@return boolean changed
 function Recipes.RecordCharacter()
 	local key, realm = Recipes.CurrentKey()
-	if not key or not ns.Store.Writable() then
+	local name = UnitName("player")
+	if not key or not realm or not name or not ns.Store.Writable() then
 		return nil, false
 	end
 	local record = ns.Store.Character(key)
@@ -77,7 +79,6 @@ function Recipes.RecordCharacter()
 		return nil, false
 	end
 	local changed = false
-	local name = UnitName("player")
 	local _, class = UnitClass("player")
 	if record.name ~= name or record.realm ~= realm then
 		record.name, record.realm, changed = name, realm, true

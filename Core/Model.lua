@@ -230,6 +230,16 @@ function Model.Footer(rows)
 end
 
 ---@class TWJob
+---@field input TWModelInput
+---@field work {[1]: TWModelCharacter, [2]: integer, [3]: TWRecipe}[] one entry per recipe a character can gather
+---@field items integer[] the distinct items the work touches, in first-seen order
+---@field seen table<integer, true> the items already in `items`
+---@field characterAt integer
+---@field ids integer[]? the current character's spell ids, sorted
+---@field idAt integer
+---@field itemAt integer
+---@field workAt integer
+---@field rows TWRow[]
 ---@field done boolean
 ---@field result TWResult?
 local Job = {}

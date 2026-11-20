@@ -37,16 +37,8 @@
 ---@field total integer copper over the priced lines
 ---@field unknown integer lines with no price
 
----@class TWAPICharacter
+---@class TWAPICharacter : TWCharacterSummary
 ---@field key string "Name-Realm"
----@field name string
----@field realm string
----@field class? string
----@field professions {skillLineId: integer, name?: string, rank: integer, max: integer}[]
----@field scanned boolean the character's recipes were recorded
----@field recipes integer recipes recorded
----@field bagsAge? integer seconds since the bags were last seen
----@field bankAge? integer seconds since the bank was last seen
 
 ---@class TWPublicAPI
 ---@field version 1
