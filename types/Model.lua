@@ -104,7 +104,7 @@
 ---@field background Texture
 ---@field hover Texture
 ---@field icon Texture
----@field overlay? Frame the item icon's Cooldown Manager frame
+---@field overlay? Texture the item icon's Cooldown Manager overlay
 ---@field cols FontString[]
 ---@field itemID? integer
 ---@field entry? TWRow|TWShoppingLine|TWAPICharacter what the tab last filled the row with

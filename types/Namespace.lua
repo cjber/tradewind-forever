@@ -49,5 +49,5 @@
 ---@field LastResult fun(): TWResult?
 ---@field Build fun() starts the sliced computation when the list is stale
 ---@field Invalidate fun(kind: string)
----@field CharacterList fun(): TWCharacterSummary[]
+---@field CharacterList fun(): TWAPICharacter[]
 ---@field APIChanged fun()
