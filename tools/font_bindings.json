@@ -3,7 +3,7 @@
   "producers": [
     {
       "source": "UI/Window.lua",
-      "sha256": "123fdcc5abb1375ca24fdfa012ad1d7971896f441a7b0781d5f94cb050c08adf",
+      "sha256": "4554eb68acb5071f7ed4f0befead69102762b138f49d8d2eb96f37eb22db5209",
       "review": "Read Text, Line, Headers, Refresh, Choose and Attach, and searched UI and Core for SetFont, SetNormalFontObject and any later font change: none. The title is GameFontNormalLarge and the empty-state line GameFontDisableSmall, set only through SetText. The three tab buttons and the Shopping list button inherit SharedButtonSmallTemplate: pinned Blizzard_SharedXML/Shared/Button/ThreeSliceButtonTemplate.xml gives normal GameFontNormal, highlight GameFontHighlight and disabled GameFontDisable, and Refresh disables the selected tab button, so all three states are bound. Row cells (GameFontHighlight), column headers (GameFontNormalSmall), the summary, the footer and the per-tab empty lines take dynamic data or text from other producers and are excluded.",
       "bindings": [
         {
