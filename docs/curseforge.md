@@ -1,6 +1,6 @@
-Tradewind Forever shows which recipes pay for each of your characters, from what they hold. This first release is the foundation: it loads, registers with ForeverCore and shows its report with `/tradewind`. The profit window is still being built.
+Tradewind Forever adds a Tradewind tab to the Professions window: which recipes pay for each of your characters, counting only what that character holds in its own bags and bank. It lists and explains; it never crafts, buys or posts.
 
-It reads prices only from Auctionator or TradeSkillMaster when you have one installed, and what your other characters hold from Syndicator. Nothing is guessed: with no price source, a price is unknown, not zero.
+Prices come from Auctionator or TradeSkillMaster when you have one installed, and what your other characters hold from Syndicator. Nothing is guessed: with no price source, an auction price is unknown, not zero. Nothing is sent to other players.
 
 Free, with nothing locked behind it. If it saves you time, you can [sponsor me on GitHub](https://github.com/sponsors/cjber), which takes no fees, or [buy me a coffee on Ko-fi](https://ko-fi.com/cjber). For help and each day's release notes, [join me on Discord](https://discord.gg/FpHugGxRJY).
 
@@ -8,33 +8,40 @@ Free, with nothing locked behind it. If it saves you time, you can [sponsor me o
 
 **Known limitations**
 
-- There is no profit window in this release; the slash command shows the report only.
-- A price is never guessed. Without Auctionator or TradeSkillMaster, a price is unknown, not zero.
-- A character you have not logged in to with Tradewind installed will show as not scanned.
+- A price is never guessed. Without Auctionator or TradeSkillMaster, an auction price is unknown and shown as ?, not zero; unknown amounts are left out of every total.
+- A character you have not logged in to with Tradewind installed shows as not scanned, and a bank you have not opened since installing counts as unknown holdings.
+- Holdings come from the client's own counts, or Syndicator when it knows the character. Without Syndicator, a character's bank is counted from the client's cached bank contents, which has not been confirmed on the Forever client; equipped items count as held only without Syndicator.
+- A merchant's price is only known after you have opened that merchant's window once.
+- Recipes and sell prices are bundled from the game's data at one client build.
+- Auction house cut and sales per day follow SkillUp Forever's figures and have not been re-checked on the Forever client.
+- The client refuses an addon opening the Professions window, so /tradewind asks you to open it and then shows the tab.
 
 ![The Tradewind Forever icon](https://raw.githubusercontent.com/cjber/tradewind-forever/main/docs/screenshots/report.png)
 
-Placeholder art: the report and profit window captures replace these when the window ships.
+Placeholder art: real captures of the report and the profit window replace these.
 
 ![The Tradewind Forever icon, second placeholder](https://raw.githubusercontent.com/cjber/tradewind-forever/main/docs/screenshots/craft-now.png)
 
-Placeholder art for the Craft now tab, which is not built yet.
+Placeholder art for the Craft now tab.
 
 ![The Tradewind Forever icon, third placeholder](https://raw.githubusercontent.com/cjber/tradewind-forever/main/docs/screenshots/characters.png)
 
-Placeholder art for the Characters tab, which is not built yet.
+Placeholder art for the Characters tab.
 
 These images are generated previews of the Tradewind Forever UI.
 
 ## Features
 
+- **Craft now.** Each character's recipes it can make now, ranked by profit per craft.
+- **Shopping.** The reagents to buy to make the best rows again.
+- **Characters.** What is recorded for each of your characters.
 - **Report.** `/tradewind` or `/tw` shows a report to copy into a bug report: versions, what the addon found, and any errors it caught.
 - **Price sources.** Reads Auctionator and TradeSkillMaster through their public APIs when installed.
 - **Other characters.** Reads what your other characters hold from Syndicator when installed.
 
 ## Usage
 
-- `/tradewind` or `/tw` shows the report.
+- `/tradewind` or `/tw` opens the Tradewind tab in the Professions window.
 - For a bug report, paste `/tradewind report`.
 
 <!-- forever-family:start -->

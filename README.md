@@ -9,13 +9,20 @@ See which recipes pay for each of your characters, from what they hold, in the P
 <br><br><a href="https://github.com/sponsors/cjber"><img src="docs/github-sponsors-button.png" alt="Sponsor me on GitHub"></a> <a href="https://ko-fi.com/cjber"><img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Support me on Ko-fi"></a>
 </p>
 
-Tradewind Forever is new and this first release is a foundation. It loads, registers with ForeverCore, and opens nothing yet: `/tradewind` shows the report and the profit window is still being built. It reads prices only from Auctionator and TradeSkillMaster when they are installed, and what your other characters hold from Syndicator.
+Tradewind Forever adds a Tradewind tab to the Professions window with three lists. Craft now ranks the recipes each of your characters can make from its own bags and bank by profit per craft. Shopping lists the reagents to buy to make the best rows again, priced where you buy them. Characters shows what is recorded for each one. It lists and explains: it never crafts, buys or posts.
+
+Prices come from Auctionator or TradeSkillMaster when you have one installed, a vendor buyer's price from the merchant windows you have opened, and what your other characters hold from Syndicator. Nothing is sent to other players.
 
 ## Known limitations
 
-- There is no profit window in this release; the slash command shows the report only.
-- A price is never guessed. Without Auctionator or TradeSkillMaster, a price is unknown, not zero.
-- A character you have not logged in to with Tradewind installed will show as not scanned.
+- A price is never guessed. Without Auctionator or TradeSkillMaster, an auction price is unknown and shown as `?`, not zero; unknown amounts are left out of every total.
+- A character you have not logged in to with Tradewind installed shows as not scanned, and a bank you have not opened since installing counts as unknown holdings.
+- Holdings come from the client's own counts, or Syndicator when it knows the character. Without Syndicator, a character's bank is counted from the client's cached bank contents, which has not been confirmed on the Forever client; equipped items count as held only without Syndicator.
+- A merchant's price is only known after you have opened that merchant's window once.
+- Recipes and sell prices are bundled from the game's data at one client build; what the client shows at a window wins.
+- Auction house cut and sales per day follow SkillUp Forever's figures and have not been re-checked on the Forever client.
+- TradeSkillMaster's recent-sale and minimum-buyout figures are read the way SkillUp Forever reads them.
+- The client refuses an addon opening the Professions window, so `/tradewind` asks you to open it and then shows the tab.
 
 ## Install
 
@@ -23,7 +30,7 @@ Download the zip from [Releases](https://github.com/cjber/tradewind-forever/rele
 
 ## Usage
 
-- `/tradewind` or `/tw` shows the report, also from the addon compartment on the minimap.
+- `/tradewind` or `/tw` opens the Tradewind tab in the Professions window, also from the addon compartment. `/tradewind report` shows the report for a bug report.
 - `/rl` reloads the interface.
 
 ## Works alongside

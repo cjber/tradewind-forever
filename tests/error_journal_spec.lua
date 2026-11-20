@@ -37,6 +37,10 @@ end
 _G.GetTime = function()
 	return 1.5
 end
+-- The addon's rebuilds wait on a timer this spec never fires.
+_G.C_Timer = {
+	After = function() end,
+}
 
 -- ForeverCore, then the addon's own files, as the client loads a required dependency first.
 local core = dofile("tests/forever_core.lua")
@@ -57,7 +61,21 @@ core.install(_G, {
 local ns = {}
 assert(loadfile("Locales/enUS.lua"))("TradewindForever", ns)
 assert(loadfile("Core/Report.lua"))("TradewindForever", ns)
-assert(loadfile("Core/Core.lua"))("TradewindForever", ns)
+for _, path in ipairs({
+	"Core/Readable.lua",
+	"Core/Professions.lua",
+	"Core/Store.lua",
+	"Core/Recipes.lua",
+	"Core/Holdings.lua",
+	"Core/Model.lua",
+	"Integrations/Prices.lua",
+	"Integrations/Merchant.lua",
+	"Integrations/Syndicator.lua",
+	"Core/Report.lua",
+	"Core/Core.lua",
+}) do
+	assert(loadfile(path))("TradewindForever", ns)
+end
 
 -- An older save's journal and log under the same keys core reads.
 TradewindForeverDB = {

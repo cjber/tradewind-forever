@@ -5,7 +5,7 @@ counting only what each can make from its own bags and bank, priced through Auct
 installed (a price is unknown otherwise, never zero). It carries ForeverCore inside its zip (`X-Forever-Core-Embed: 1`,
 the release pinned in `tools/forever-core.txt`), which owns registration, the report window, the credits page,
 profession tabs and the API kit. It lists and explains; it never crafts, buys or posts. Players install the zip the
-BigWigs packager builds on a `v*` tag. This repository holds the scaffold; the profit window is not built yet.
+BigWigs packager builds on a `v*` tag.
 
 ## Commands
 
@@ -29,7 +29,14 @@ Release: `.agents/skills/release/SKILL.md`.
 - `Core/Core.lua` registers with ForeverCore once (`ns.core`) and owns the slash command, the saved variables and the
   addon compartment entry. The slash command prints nothing to chat. Everything shared is ForeverCore's: never copy
   one of its files here.
-- `Integrations/Syndicator.lua` is the only file that names Syndicator; `tools/repo_rules.py` enforces it.
+- `Core/Model.lua` is pure: rows, profit, sort and the shopping list from plain tables, no client calls. Unknown is
+  `nil`, never 0. `Core/Holdings.lua` reads one source per character per pass, `Core/Recipes.lua` records recipes,
+  `Core/Store.lua` owns the saved variable and its schema, and `Core/API.lua` is the published API (`docs/api.md`).
+- `Integrations/Prices.lua` reads Auctionator and TradeSkillMaster, `Merchant.lua` records merchant prices, and
+  `Syndicator.lua` is the only file that names Syndicator; `tools/repo_rules.py` enforces it.
+- `UI/Window.lua` registers the Professions tab through ForeverCore's `ProfessionTabs`; the client refuses an addon
+  opening the window, so the slash command shows one error line and selects the tab when the window opens. `UI/RowArt.lua`
+  is the one place row art is sized (`tools/lint_art.py`).
 - `Data/Credits.lua` is generated from `THIRD_PARTY.md` by `python3 tools/forever_tools/credits.py`; never hand-edit.
 - `Locales/enUS.lua` makes `ns.L` keyed by the English phrase, text is a whole `L["..."]` phrase;
   `python3 -m tools.phrases --write` after a change (`tests/locale_spec.lua` checks both).
@@ -41,8 +48,8 @@ Release: `.agents/skills/release/SKILL.md`.
 - Nothing is written to chat (`tools/repo_rules.py`), no minimap button, and no assignment into a Blizzard frame:
   hook it with `HookScript` or `hooksecurefunc` (WFA-38).
 - Missing data renders `?`, never a guess; an unknown price or holding is excluded from totals, not counted as zero.
-- Never stretch art: draw at native aspect, item icons through ForeverCore's `Art.Icon`. Add `tools/lint_art.py`
-  (copy it from commissions-forever, `UI/RowArt.lua` as its one helper) with the first row art.
+- Never stretch art: draw at native aspect, item icons through ForeverCore's `Art.Icon`; `tools/lint_art.py` checks it.
+- Nothing is sent to other players, and no protected action runs: the addon reads and lists only.
 - Host globals go in `.luacheckrc`, missing Forever or integration APIs get real types in `types/`, never
   `diagnostics.globals`. A scalar `select(...)` in last position is parenthesized or carries `-- multi-value: reason`.
 - ForeverCore ships first: bump the pin in `tools/forever-core.txt` and the TOC's `X-Forever-Core` together, only to a
@@ -53,7 +60,7 @@ Release: `.agents/skills/release/SKILL.md`.
 WFA-28 exceptions, because no addon or public API holds them; what the client shows at a window wins over the
 bundled value:
 
-- Recipe reagents, outputs and sell prices (`Data/Recipes.lua`, `Data/Thresholds.lua`, not yet generated) come from
+- Recipe reagents, outputs and sell prices (`Data/Recipes.lua`, `tools/data/Thresholds.lua`) come from
   the client's own DB2 tables through wago.tools at the pinned build, 1.60.1.70959; a generated file is never
   hand-edited.
 
