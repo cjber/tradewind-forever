@@ -1,0 +1,5 @@
+.claude/
+# Translations are one phrase per line, however long.
+Locales/*.lua
+!Locales/enUS.lua
+forever-core/
