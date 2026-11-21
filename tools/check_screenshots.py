@@ -3,7 +3,7 @@
 
 The gallery images are captures of the addon in game, so each image's dump is the hash of the files that lay out what
 it shows: the window, its tabs and tooltips, the model that fills them and the English phrases. A change to any of
-them marks every capture stale until it is retaken and `--record` rewrites docs/screenshots/scenes.sha256 (with
+them marks every capture stale until it is retaken and `--record` rewrites docs/screenshots/scenes/<image>.sha256 (with
 `--force` for a capture that came out the same).
 
     python3 tools/check_screenshots.py           # CI: fail on a stale image
