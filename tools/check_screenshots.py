@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
-"""Fail when a screenshot is older than what it shows (WFA-9, forever_tools.screens).
+"""Fail when a mock screenshot is older than what it shows (WFA-9, forever_tools.screens).
 
-The gallery images are captures of the addon in game, so each image's dump is the hash of the files that lay out what
-it shows: the window, its tabs and tooltips, the model that fills them and the English phrases. A change to any of
-them marks every capture stale until it is retaken and `--record` rewrites docs/screenshots/scenes/<image>.sha256 (with
-`--force` for a capture that came out the same).
+The gallery renders come from tools/screenshots.py. The freshness check hashes the renderer, simulator scenario,
+model, phrases and widgets to detect a stale mock.
 
     python3 tools/check_screenshots.py           # CI: fail on a stale image
-    python3 tools/check_screenshots.py --record  # after the captures are retaken
+    python3 tools/check_screenshots.py --record  # after the mocks are rendered again
 """
 
 import functools
@@ -25,6 +23,10 @@ SOURCES = (
     "Core/Model.lua",
     "Core/Report.lua",
     "Locales/enUS.lua",
+    "media/Icon.tga",
+    "tests/sim/professions_page_scenario.lua",
+    "tools/forever-core.txt",
+    "tools/screenshots.py",
     "UI/Characters.lua",
     "UI/CraftNow.lua",
     "UI/Format.lua",

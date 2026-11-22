@@ -279,3 +279,122 @@ scenario("the report command lists the addon's own lines", function(sim)
 	slash(sim, "report")
 	sim:expectNoErrors(ADDON)
 end)
+
+-- tools/screenshots.py runs this fixture to capture the widgets opened by the player.
+if os.getenv("TRADEWIND_MOCK_SCENES") ~= "1" then
+	return
+end
+
+scenario("mock proof", { stubs = { Auctionator = { prices = { [2835] = 4, [2862] = 30 } } } }, function(sim)
+	world(sim)
+	sim.G.C_CurrencyInfo.GetCoinTextureString = function(amount)
+		local parts = {}
+		for _, coin in ipairs({ { 10000, "gold" }, { 100, "silver" }, { 1, "copper" } }) do
+			local units = math.floor(amount / coin[1])
+			if units > 0 or (coin[1] == 1 and #parts == 0) then
+				parts[#parts + 1] = ("%d|Tinterface/moneyframe/ui-%sicon:12:12|t"):format(units, coin[2])
+			end
+			amount = amount % coin[1]
+		end
+		return table.concat(parts, " ")
+	end
+	sim.impl.GetServerTime = function()
+		return 61
+	end
+	local characters = {}
+	for index = 1, 24 do
+		local name = ("Smith%02d"):format(index)
+		characters[name .. "-MockRealm"] = {
+			name = name,
+			realm = "MockRealm",
+			class = "Warrior",
+			lastSeen = 1,
+			scannedAt = 1,
+			professions = { [164] = { reportedId = 164, name = "Blacksmithing", rank = 30, max = 75 } },
+			recipes = { [2660] = true },
+			bags = { counts = { [2835] = 12 + index }, observedAt = 1 },
+		}
+	end
+	sim:login({ savedVariables = { TradewindForeverDB = { schema = 1, characters = characters } } })
+	local pf = sim:openProfessions(164)
+	sim:advance(0.2)
+	press(sim, tradewindTab(sim))
+	sim:advance(1)
+	local body = page(sim)
+	local scroll
+	for _, child in ipairs({ body:GetChildren() }) do
+		for _, inner in ipairs({ child:GetChildren() }) do
+			if inner.GetScrollChild and inner:GetScrollChild() then
+				scroll = inner
+			end
+		end
+	end
+	assert(scroll, "missing scrollframe")
+	local function emit(...)
+		print("PROOF", ...)
+	end
+	emit("host", pf:GetWidth(), pf:GetHeight())
+	for _, label in ipairs({ "Craft now", "Shopping", "Characters" }) do
+		local button = subTab(sim, label)
+		local anchor, _, relative, x, y = button:GetPoint()
+		emit("tab", label, button:GetWidth(), button:GetHeight(), anchor, relative, x, y)
+	end
+	for index, key in ipairs({ "craft", "shopping", "characters" }) do
+		if index > 1 then
+			click(sim, subTab(sim, key == "shopping" and "Shopping" or "Characters"))
+		end
+		emit("section", key)
+		emit("scroll", scroll:GetWidth(), scroll:GetHeight(), scroll:GetScrollChild():GetHeight())
+		for _, region in ipairs({ body:GetRegions() }) do
+			if region.GetText and region:GetText() ~= "" then
+				emit("text", region:GetText())
+			end
+		end
+		for _, region in ipairs({ scroll:GetParent():GetRegions() }) do
+			if region.GetText and region:IsShown() then
+				emit("insettext", region:GetText())
+			end
+		end
+		local hovered
+		for _, line in ipairs({ scroll:GetScrollChild():GetChildren() }) do
+			if line:IsShown() and line.cols then
+				local text = {}
+				for _, column in ipairs(line.cols) do
+					if column:IsShown() then
+						text[#text + 1] = column:GetText() or ""
+					end
+				end
+				emit("row", line.itemID or "", table.concat(text, " | "))
+				hovered = hovered or line
+			end
+		end
+		if hovered and key ~= "shopping" then
+			sim.widgets.dispatch(hovered, "OnEnter")
+			local tip = sim.G.GameTooltip
+			for row = 1, tip:NumLines() do
+				local left = tip["TextLeft" .. row]
+				local right = tip["TextRight" .. row]
+				local function text(region)
+					return region and region:IsShown() and region:GetText() or ""
+				end
+				local r, g, b = left:GetTextColor()
+				emit("tip", text(left), text(right), r or 1, g or 1, b or 1)
+			end
+			sim.widgets.dispatch(hovered, "OnLeave")
+		end
+	end
+	slash(sim, "report")
+	local report = sim.G.TradewindForeverReport
+	assert(report and report:IsShown(), "missing report")
+	emit("section", "report")
+	emit("size", report:GetWidth(), report:GetHeight())
+	for _, child in ipairs({ report:GetChildren() }) do
+		for _, frame in ipairs({ child:GetChildren() }) do
+			if frame.GetScrollChild and frame:GetScrollChild() then
+				for line in frame:GetScrollChild():GetText():gmatch("[^\n]+") do
+					emit("log", (line:gsub("\t", "  ")))
+				end
+			end
+		end
+	end
+end)
