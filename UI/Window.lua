@@ -81,7 +81,10 @@ local function RaiseAboveNativePages()
 	end
 	local strata, level = NativePagesStrata()
 	page:SetFrameStrata(strata)
-	page:SetFrameLevel(level + 1)
+	-- The native portrait and rim own the corner above both addon and profession content.
+	local portrait = ProfessionsFrame.PortraitContainer
+	local ceiling = portrait and portrait:GetFrameLevel() - 1 or level + 1
+	page:SetFrameLevel(math.min(level + 1, ceiling))
 end
 
 local function SelectPage()
@@ -129,7 +132,7 @@ end
 -- How far the columns stretch: a tab declares them for the 584-wide list, and the list fills the scroll frame, which
 -- the profession window can make wider.
 local function Stretch()
-	return math.max(1, Window.list:GetWidth() / LIST_WIDTH)
+	return Window.list:GetWidth() / LIST_WIDTH
 end
 
 -- Places a line's columns where the selected tab declares them, stretched across the list.
@@ -319,7 +322,7 @@ local function Attach()
 	Window.scroll:SetScrollChild(Window.list)
 	-- The list fills the scroll frame's width, and the columns follow it.
 	Window.scroll:HookScript("OnSizeChanged", function(_, width)
-		Window.list:SetWidth(math.max(LIST_WIDTH, width))
+		Window.list:SetWidth(math.max(1, width))
 		if page and page:IsShown() then
 			Window.Refresh()
 		end
