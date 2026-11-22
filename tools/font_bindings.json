@@ -3,7 +3,7 @@
   "producers": [
     {
       "source": "UI/Window.lua",
-      "sha256": "b15fd53c18c7660c61d5e3397e94ac0c2f3429f85b5a301f3112d3c4fd9249b2",
+      "sha256": "545b44d6fd31c6950824a291f75abc527b88acd3bc31eae640776f9091654214",
       "review": "Read Text, Line, Headers, Refresh, Choose and Attach. The title uses GameFontNormalLarge and the empty-state line uses GameFontDisableSmall. PanelTopTabButtonTemplate inherits the normal GameFontNormalSmall, highlight GameFontHighlightSmall and disabled GameFontHighlightSmall from PanelTabButtonTemplate (Blizzard_SharedXML/Mainline/SharedUIPanelTemplates.xml). PanelTemplates_SelectTab also sets the disabled font to GameFontHighlightSmall. The Shopping list action still inherits SharedButtonSmallTemplate and its three font states from Blizzard_SharedXML/Shared/Button/ThreeSliceButtonTemplate.xml. Row cells, headers, summary, footer and per-tab empty lines take dynamic data or text from other producers and are excluded.",
       "bindings": [
         {

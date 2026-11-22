@@ -80,11 +80,20 @@ local function RaiseAboveNativePages()
 		return
 	end
 	local strata, level = NativePagesStrata()
-	page:SetFrameStrata(strata)
+	local targetLevel = level + 1
 	-- The native portrait and rim own the corner above both addon and profession content.
 	local portrait = ProfessionsFrame.PortraitContainer
-	local ceiling = portrait and portrait:GetFrameLevel() - 1 or level + 1
-	page:SetFrameLevel(math.min(level + 1, ceiling))
+	if portrait then
+		local portraitStrata = portrait:GetFrameStrata()
+		local ceiling = portrait:GetFrameLevel() - 1
+		if (STRATA[strata] or 0) > (STRATA[portraitStrata] or 0) then
+			strata, targetLevel = portraitStrata, ceiling
+		elseif strata == portraitStrata then
+			targetLevel = math.min(targetLevel, ceiling)
+		end
+	end
+	page:SetFrameStrata(strata)
+	page:SetFrameLevel(targetLevel)
 end
 
 local function SelectPage()
