@@ -13,6 +13,9 @@ local Format = ns.Format
 local Window = {}
 ns.Window = Window
 
+---@class TWScrollFrame : ScrollFrame
+---@field ScrollBar { SetHideIfUnscrollable: fun(self: Frame, hide: boolean) }
+
 local ProfessionTabs = assert(ForeverCore.ProfessionTabs, "ForeverCore has no shared Professions tabs")
 -- The client's normal font colour, as plain numbers: a Blizzard colour object's methods are never called (WFA-38).
 local GOLD = { r = 1, g = 0.82, b = 0 }
@@ -77,8 +80,20 @@ local function RaiseAboveNativePages()
 		return
 	end
 	local strata, level = NativePagesStrata()
+	local targetLevel = level + 1
+	-- The native portrait and rim own the corner above both addon and profession content.
+	local portrait = ProfessionsFrame.PortraitContainer
+	if portrait then
+		local portraitStrata = portrait:GetFrameStrata()
+		local ceiling = portrait:GetFrameLevel() - 1
+		if (STRATA[strata] or 0) > (STRATA[portraitStrata] or 0) then
+			strata, targetLevel = portraitStrata, ceiling
+		elseif strata == portraitStrata then
+			targetLevel = math.min(targetLevel, ceiling)
+		end
+	end
 	page:SetFrameStrata(strata)
-	page:SetFrameLevel(level + 1)
+	page:SetFrameLevel(targetLevel)
 end
 
 local function SelectPage()
@@ -126,7 +141,7 @@ end
 -- How far the columns stretch: a tab declares them for the 584-wide list, and the list fills the scroll frame, which
 -- the profession window can make wider.
 local function Stretch()
-	return math.max(1, Window.list:GetWidth() / LIST_WIDTH)
+	return Window.list:GetWidth() / LIST_WIDTH
 end
 
 -- Places a line's columns where the selected tab declares them, stretched across the list.
@@ -238,13 +253,12 @@ function Window.Refresh()
 	Window.summary:SetText(Summary(result))
 	Window.footer:SetText(tab.Footer(result))
 	Window.shoppingButton:SetShown(selected == TABS[1])
-	for _, entry in ipairs(TABS) do
-		entry.button:SetEnabled(entry ~= selected)
-	end
 end
 
 local function Choose(entry)
+	PanelTemplates_DeselectTab(selected.button)
 	selected = entry
+	PanelTemplates_SelectTab(selected.button)
 	Window.Refresh()
 end
 
@@ -274,26 +288,30 @@ local function Attach()
 	Window.search:SetPoint("TOPLEFT", 22, -48)
 	Window.search:SetAutoFocus(false)
 	Window.search:HookScript("OnTextChanged", Window.Refresh)
+	local inset = CreateFrame("Frame", nil, page)
+	inset:SetPoint("TOPLEFT", 14, -78)
+	inset:SetPoint("BOTTOMRIGHT", -14, 44)
+	Window.inset = inset
 	local previous
 	for _, entry in ipairs(TABS) do
-		local button = CreateFrame("Button", nil, page, "SharedButtonSmallTemplate")
-		button:SetSize(100, 22)
+		local button = CreateFrame("Button", nil, page, "PanelTopTabButtonTemplate")
 		if previous then
-			button:SetPoint("LEFT", previous, "RIGHT", 6, 0)
+			button:SetPoint("BOTTOMLEFT", previous, "BOTTOMRIGHT", 3, 0)
 		else
-			button:SetPoint("TOPLEFT", 236, -47)
+			button:SetPoint("BOTTOMLEFT", inset, "TOPLEFT", 222, -2)
 		end
 		button:SetText(entry.label)
+		if entry == selected then
+			PanelTemplates_SelectTab(button)
+		else
+			PanelTemplates_DeselectTab(button)
+		end
 		button:SetScript("OnClick", function()
 			Choose(entry)
 		end)
 		entry.button = button
 		previous = button
 	end
-	local inset = CreateFrame("Frame", nil, page)
-	inset:SetPoint("TOPLEFT", 14, -78)
-	inset:SetPoint("BOTTOMRIGHT", -14, 44)
-	Window.inset = inset
 	local background = inset:CreateTexture(nil, "BACKGROUND")
 	background:SetPoint("TOPLEFT", 2, -2)
 	background:SetPoint("BOTTOMRIGHT", -2, 2)
@@ -303,8 +321,9 @@ local function Attach()
 	for index = 1, COLUMNS do
 		Window.headers[index] = Text(inset, "GameFontNormalSmall", 0, -10, 40)
 	end
-	Window.scroll = CreateFrame("ScrollFrame", nil, inset, "UIPanelScrollFrameTemplate")
-	Window.scroll.scrollBarHideable = true
+	local scroll = CreateFrame("ScrollFrame", nil, inset, "ScrollFrameTemplate") --[[@as TWScrollFrame]]
+	scroll.ScrollBar:SetHideIfUnscrollable(true)
+	Window.scroll = scroll
 	Window.scroll:SetPoint("TOPLEFT", 4, -32)
 	Window.scroll:SetPoint("BOTTOMRIGHT", -30, 4)
 	Window.list = CreateFrame("Frame", nil, Window.scroll)
@@ -312,7 +331,7 @@ local function Attach()
 	Window.scroll:SetScrollChild(Window.list)
 	-- The list fills the scroll frame's width, and the columns follow it.
 	Window.scroll:HookScript("OnSizeChanged", function(_, width)
-		Window.list:SetWidth(math.max(LIST_WIDTH, width))
+		Window.list:SetWidth(math.max(1, width))
 		if page and page:IsShown() then
 			Window.Refresh()
 		end
