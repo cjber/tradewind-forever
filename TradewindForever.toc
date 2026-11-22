@@ -9,7 +9,7 @@
 ## X-Donate: https://github.com/sponsors/cjber
 ## IconTexture: Interface\AddOns\TradewindForever\media\Icon
 ## X-Forever-Icon: Interface\Icons\INV_Misc_Coin_02
-## X-Forever-Core: v1.17.0
+## X-Forever-Core: v1.17.1
 ## X-Forever-Core-Embed: 1
 ## OptionalDeps: Auctionator, TradeSkillMaster, Syndicator, ForeverCore
 ## SavedVariables: TradewindForeverDB
