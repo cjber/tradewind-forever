@@ -316,9 +316,21 @@ scenario("mock proof", { stubs = { Auctionator = { prices = { [2835] = 4, [2862]
 		}
 	end
 	sim:login({ savedVariables = { TradewindForeverDB = { schema = 1, characters = characters } } })
-	local pf = sim:openProfessions(164)
+	local cooking = os.getenv("TRADEWIND_MOCK_COOKING") == "1"
+	if cooking then
+		sim.world.professions[2] =
+			{ skillLineID = 185, name = "Cooking", skill = 30, max = 75, spellID = 2550, categories = {}, recipes = {} }
+		sim.world.spells[2550] = { name = "Cooking", icon = 133971 }
+	end
+	local pf = sim:openProfessions(cooking and 185 or 164)
 	sim:advance(0.2)
 	press(sim, tradewindTab(sim))
+	local width = tonumber(os.getenv("TRADEWIND_MOCK_WIDTH"))
+	if width then
+		-- Keep Core from immediately restoring its fixed host width in this resize stress fixture.
+		sim:enterCombat()
+		pf:SetWidth(width)
+	end
 	sim:advance(1)
 	local body = page(sim)
 	local scroll
@@ -333,7 +345,7 @@ scenario("mock proof", { stubs = { Auctionator = { prices = { [2835] = 4, [2862]
 	local function emit(...)
 		print("PROOF", ...)
 	end
-	emit("host", pf:GetWidth(), pf:GetHeight())
+	emit("host", pf:GetWidth(), pf:GetHeight(), cooking and "Cooking" or "Blacksmithing")
 	for _, label in ipairs({ "Craft now", "Shopping", "Characters" }) do
 		local button = subTab(sim, label)
 		local anchor, _, relative, x, y = button:GetPoint()
@@ -352,7 +364,9 @@ scenario("mock proof", { stubs = { Auctionator = { prices = { [2835] = 4, [2862]
 		end
 		for _, region in ipairs({ scroll:GetParent():GetRegions() }) do
 			if region.GetText and region:IsShown() then
-				emit("insettext", region:GetText())
+				local _, _, _, x = region:GetPoint()
+				local kind = region:GetFontObject() == sim.G.GameFontNormalSmall and "heading" or "empty"
+				emit(kind, region:GetText(), x, region:GetWidth(), region:GetJustifyH())
 			end
 		end
 		local hovered

@@ -18,8 +18,8 @@ CraftNow.columns = {
 	{ L["Character"], 232, 100, "LEFT" },
 	{ L["Make"], 336, 44, "RIGHT" },
 	{ L["Cost"], 388, 78, "RIGHT" },
-	{ L["Profit"], 470, 70, "RIGHT" },
-	{ L["Sold/day"], 544, 40, "RIGHT" },
+	{ L["Profit"], 470, 58, "RIGHT" },
+	{ L["Sold/day"], 532, 52, "RIGHT" },
 }
 CraftNow.empty = L["Nothing to craft from what your characters hold"]
 CraftNow.icons = true

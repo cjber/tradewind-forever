@@ -13,7 +13,7 @@ import sys
 from dataclasses import replace
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parent.parent
 CORE = Path(os.environ.get("FOREVER_CORE", ROOT.parent / "forever-core")).resolve()
@@ -42,26 +42,29 @@ from wowmock import (  # ty: ignore[import-not-found]
 )
 
 BUILD = "1.60.1.70124"
-COLUMNS = {
-    "craft": [
-        (36, 190, "LEFT"),
-        (232, 100, "LEFT"),
-        (336, 44, "RIGHT"),
-        (388, 78, "RIGHT"),
-        (470, 70, "RIGHT"),
-        (544, 40, "RIGHT"),
-    ],
-    "shopping": [(36, 230, "LEFT"), (270, 60, "RIGHT"), (336, 94, "RIGHT"), (434, 94, "RIGHT"), (544, 40, "LEFT")],
-    "characters": [(8, 130, "LEFT"), (142, 220, "LEFT"), (366, 80, "LEFT"), (450, 62, "LEFT"), (516, 62, "LEFT")],
-}
+PAGES = ("craft", "shopping", "characters")
+# The before proof uses the prior Craft now coordinates and width floor.
+LEGACY_CRAFT_COLUMNS = [
+    (36, 190, "LEFT"),
+    (232, 100, "LEFT"),
+    (336, 44, "RIGHT"),
+    (388, 78, "RIGHT"),
+    (470, 70, "RIGHT"),
+    (544, 40, "RIGHT"),
+]
 SCENARIO = "tests/sim/professions_page_scenario.lua"
 
 
-def capture_widgets():
+def capture_widgets(cooking=False, width=None):
+    env = {**os.environ, "FOREVER_CORE": str(CORE), "TRADEWIND_MOCK_SCENES": "1"}
+    if cooking:
+        env["TRADEWIND_MOCK_COOKING"] = "1"
+    if width:
+        env["TRADEWIND_MOCK_WIDTH"] = str(width)
     result = subprocess.run(
         ["luajit", "tools/forever_sim/run.lua", SCENARIO, "--only=mock proof"],
         cwd=ROOT,
-        env={**os.environ, "FOREVER_CORE": str(CORE), "TRADEWIND_MOCK_SCENES": "1"},
+        env=env,
         capture_output=True,
         text=True,
         stdin=subprocess.DEVNULL,
@@ -112,8 +115,9 @@ def native_tab(canvas, x, bottom, width, height, text, selected):
     )
 
 
-def professions_mock(ui, host, widgets, page, hover=False):
-    width, height = map(float, host["host"][0])
+def professions_mock(ui, host, widgets, page, hover=False, proof=None):
+    host_w, host_h, profession = host["host"][0]
+    width, height = float(host_w), float(host_h)
     scroll_width, scroll_height, total_height = map(float, widgets["scroll"][0])
     canvas = ui.canvas(width + 80, height + 32)
     fx, fy = 14, 14
@@ -121,11 +125,15 @@ def professions_mock(ui, host, widgets, page, hover=False):
     inset_x, inset_y = page_x + 14, page_y + 78
     inset_w, inset_h = width - 36, height - 154
     canvas.draw(ui.atlas("Profession-Background-Overview"), page_x, page_y, width - 8, height - 32)
-    portrait_frame_art(canvas, fx, fy, width, height, 136241, "Blacksmithing")
+    icon = 133971 if profession == "Cooking" else 136241
+    portrait_frame_art(canvas, fx, fy, width, height, icon, profession)
+    if proof == "before":
+        # Model the lifted page covering the part of the native portrait inside its bounds.
+        canvas.draw(ui.atlas("Profession-Background-Overview"), page_x, page_y, width - 8, height - 32)
     # Same fallback as SkillUp's mock: the native Overview icon has no known FileDataID.
     side_tab(canvas, fx + width, fy + 60, 136241)
     side_tab(canvas, fx + width, fy + 117, 136241)
-    side_tab(canvas, fx + width, fy + 174, 136248)
+    side_tab(canvas, fx + width, fy + 174, 133971 if profession == "Cooking" else 136248)
     side_tab(canvas, fx + width, fy + 231, 133785, selected=True)
 
     title, summary, footer = (line[0] for line in widgets["text"])
@@ -134,26 +142,28 @@ def professions_mock(ui, host, widgets, page, hover=False):
     search_box(canvas, page_x + 22, page_y + 48, 200)
     canvas.draw(ui.atlas("common-insideframe"), inset_x + 2, inset_y + 2, inset_w - 4, inset_h - 4)
     tab_x = page_x + 236
-    for tab_page, (text, w, h, *_anchors) in zip(COLUMNS, host["tab"], strict=True):
+    for tab_page, (text, w, h, *_anchors) in zip(PAGES, host["tab"], strict=True):
         w, h = float(w), float(h)
         native_tab(canvas, tab_x, inset_y + 2, w, h, text, selected=tab_page == page)
         tab_x += w + 3
 
-    columns = COLUMNS[page]
-    stretch = max(1, scroll_width / 584)
-    inset_labels = [line[0] for line in widgets["insettext"]]
-    for heading, (x, w, align) in zip(inset_labels[: len(columns)], columns, strict=True):
+    headings = widgets["heading"]
+    columns = [(float(x) - 4, float(w), align) for _, x, w, align in headings]
+    if proof == "before":
+        stretch = max(1, scroll_width / 584)
+        columns = [(x * stretch, w * stretch, align) for x, w, align in LEGACY_CRAFT_COLUMNS]
+    for (heading, *_), (x, w, align) in zip(headings, columns, strict=True):
         canvas.text(
-            inset_x + 4 + x * stretch,
+            inset_x + 4 + x,
             inset_y + 10,
             heading,
             FONTS["GameFontNormalSmall"],
-            width=w * stretch,
+            width=w,
             justify=align,
         )
     rows = widgets.get("row", [])
     if not rows:
-        canvas.text(inset_x + 12, inset_y + 42, inset_labels[-1], FONTS["GameFontDisableSmall"])
+        canvas.text(inset_x + 12, inset_y + 42, widgets["empty"][0][0], FONTS["GameFontDisableSmall"])
 
     list_x, list_y = inset_x + 4, inset_y + 32
     visible = canvas.ui.canvas(scroll_width, scroll_height)
@@ -170,9 +180,7 @@ def professions_mock(ui, host, widgets, page, hover=False):
         if item_id:
             cooldown_icon(visible, 8, row_y + 3, 24, ui.item(int(item_id)).icon)
         for label, (x, w, align) in zip(lines.split(" | "), columns, strict=True):
-            visible.text(
-                4 + x * stretch, row_y + 8, label, FONTS["GameFontHighlight"], width=w * stretch, justify=align
-            )
+            visible.text(4 + x, row_y + 8, label, FONTS["GameFontHighlight"], width=w, justify=align)
     canvas.paste(visible, list_x, list_y)
     if total_height > scroll_height:
         minimal_scrollbar(
@@ -182,6 +190,15 @@ def professions_mock(ui, host, widgets, page, hover=False):
     if page == "craft":
         three_slice_button(canvas, fx + width - 168, fy + height - 38, 150, 24, "Shopping list")
 
+    if proof:
+        marks = ImageDraw.Draw(canvas.image)
+        for box in (
+            (fx - 3, fy - 7, fx + 55, fy + 51),
+            (inset_x - 2, inset_y - 2, inset_x + inset_w + 2, inset_y + inset_h + 2),
+            (inset_x + scroll_width - 122, inset_y + 7, inset_x + scroll_width + 7, inset_y + 25),
+        ):
+            marks.rectangle(tuple(canvas.px(v) for v in box), outline="#ffd058", width=2)
+        canvas.text(fx + 65, fy + 27, f"MOCK | {proof.upper()}", FONTS["GameFontNormalSmall"])
     layers = [(canvas, 0, 0)]
     if hover:
         lines = [TooltipLine(left, tuple(map(float, rgb)), right or None) for left, right, *rgb in widgets["tip"]]
@@ -229,10 +246,19 @@ def report_mock(ui, widgets):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=ROOT / "docs/screenshots")
+    parser.add_argument("--cooking-proof", action="store_true")
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
-    widgets = read_widgets(capture_widgets())
     ui = Ui(build=BUILD, scale=1)
+    if args.cooking_proof:
+        for label, width in (("default", None), ("narrow", 620)):
+            widgets = read_widgets(capture_widgets(cooking=True, width=width))
+            for state in ("before", "after"):
+                professions_mock(ui, widgets["host"], widgets["craft"], "craft", proof=state).save(
+                    args.output / f"cooking-{label}-{state}.png"
+                )
+        return
+    widgets = read_widgets(capture_widgets())
     for name, key, hover in (
         ("craft-now", "craft", False),
         ("craft-now-tooltip", "craft", True),
