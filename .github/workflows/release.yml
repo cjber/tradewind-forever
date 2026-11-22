@@ -120,6 +120,20 @@ jobs:
           RELEASE_TAG: ${{ steps.target.outputs.tag }}
           RELEASE_COMMIT: ${{ steps.target.outputs.commit }}
         run: |
+          # The packager picks the GitHub release tag from the tags on the commit, not from this run, and any tag
+          # can outrank a lightweight one in its sort. Refuse before creating a new tag on a commit that already
+          # carries another tag, so the checked ZIP cannot be attached to the wrong release.
+          tags=$(git tag --points-at "$RELEASE_COMMIT")
+          other=""
+          while IFS= read -r tag; do
+            if [ -n "$tag" ] && [ "$tag" != "$RELEASE_TAG" ]; then
+              other="${other:+$other }$tag"
+            fi
+          done <<< "$tags"
+          if [ -n "$other" ]; then
+            echo "::error::$RELEASE_COMMIT already carries $other; release a commit with no other tag."
+            exit 1
+          fi
           # A missing tag answers 404 with its error body on stdout, so branch on the exit status, not the output.
           if found=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG" --jq '"\(.object.type) \(.object.sha)"' 2>/dev/null); then
             read -r kind existing <<< "$found"
@@ -187,6 +201,9 @@ jobs:
           persist-credentials: false
       - name: Embed ForeverCore
         run: python3 -m tools.forever_tools.embed --core forever-core
+      # The packager fills @project-version@ with the tag, v and all; write the bare version first.
+      - name: Write the bare version into the TOC
+        run: python3 -m tools.forever_tools.toc_version
       - name: Build the release ZIP
         uses: BigWigsMods/packager@01e8631a69c69d7654c788d152630d5fed9e3812 # v2.7.0
         with:
