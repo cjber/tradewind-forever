@@ -13,6 +13,9 @@ local Format = ns.Format
 local Window = {}
 ns.Window = Window
 
+---@class TWScrollFrame : ScrollFrame
+---@field ScrollBar { SetHideIfUnscrollable: fun(self: Frame, hide: boolean) }
+
 local ProfessionTabs = assert(ForeverCore.ProfessionTabs, "ForeverCore has no shared Professions tabs")
 -- The client's normal font colour, as plain numbers: a Blizzard colour object's methods are never called (WFA-38).
 local GOLD = { r = 1, g = 0.82, b = 0 }
@@ -238,13 +241,12 @@ function Window.Refresh()
 	Window.summary:SetText(Summary(result))
 	Window.footer:SetText(tab.Footer(result))
 	Window.shoppingButton:SetShown(selected == TABS[1])
-	for _, entry in ipairs(TABS) do
-		entry.button:SetEnabled(entry ~= selected)
-	end
 end
 
 local function Choose(entry)
+	PanelTemplates_DeselectTab(selected.button)
 	selected = entry
+	PanelTemplates_SelectTab(selected.button)
 	Window.Refresh()
 end
 
@@ -274,26 +276,30 @@ local function Attach()
 	Window.search:SetPoint("TOPLEFT", 22, -48)
 	Window.search:SetAutoFocus(false)
 	Window.search:HookScript("OnTextChanged", Window.Refresh)
+	local inset = CreateFrame("Frame", nil, page)
+	inset:SetPoint("TOPLEFT", 14, -78)
+	inset:SetPoint("BOTTOMRIGHT", -14, 44)
+	Window.inset = inset
 	local previous
 	for _, entry in ipairs(TABS) do
-		local button = CreateFrame("Button", nil, page, "SharedButtonSmallTemplate")
-		button:SetSize(100, 22)
+		local button = CreateFrame("Button", nil, page, "PanelTopTabButtonTemplate")
 		if previous then
-			button:SetPoint("LEFT", previous, "RIGHT", 6, 0)
+			button:SetPoint("BOTTOMLEFT", previous, "BOTTOMRIGHT", 3, 0)
 		else
-			button:SetPoint("TOPLEFT", 236, -47)
+			button:SetPoint("BOTTOMLEFT", inset, "TOPLEFT", 222, -2)
 		end
 		button:SetText(entry.label)
+		if entry == selected then
+			PanelTemplates_SelectTab(button)
+		else
+			PanelTemplates_DeselectTab(button)
+		end
 		button:SetScript("OnClick", function()
 			Choose(entry)
 		end)
 		entry.button = button
 		previous = button
 	end
-	local inset = CreateFrame("Frame", nil, page)
-	inset:SetPoint("TOPLEFT", 14, -78)
-	inset:SetPoint("BOTTOMRIGHT", -14, 44)
-	Window.inset = inset
 	local background = inset:CreateTexture(nil, "BACKGROUND")
 	background:SetPoint("TOPLEFT", 2, -2)
 	background:SetPoint("BOTTOMRIGHT", -2, 2)
@@ -303,8 +309,9 @@ local function Attach()
 	for index = 1, COLUMNS do
 		Window.headers[index] = Text(inset, "GameFontNormalSmall", 0, -10, 40)
 	end
-	Window.scroll = CreateFrame("ScrollFrame", nil, inset, "UIPanelScrollFrameTemplate")
-	Window.scroll.scrollBarHideable = true
+	local scroll = CreateFrame("ScrollFrame", nil, inset, "ScrollFrameTemplate") --[[@as TWScrollFrame]]
+	scroll.ScrollBar:SetHideIfUnscrollable(true)
+	Window.scroll = scroll
 	Window.scroll:SetPoint("TOPLEFT", 4, -32)
 	Window.scroll:SetPoint("BOTTOMRIGHT", -30, 4)
 	Window.list = CreateFrame("Frame", nil, Window.scroll)

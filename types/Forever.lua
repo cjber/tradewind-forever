@@ -22,3 +22,9 @@ Syndicator = nil
 -- The client's Professions window, as ForeverCore's shared types describe it (CraftingPage, BookPage and the tabs).
 ---@type ForeverProfessionsWindow
 ProfessionsFrame = nil
+
+---@param tab Button
+function PanelTemplates_SelectTab(tab) end
+
+---@param tab Button
+function PanelTemplates_DeselectTab(tab) end

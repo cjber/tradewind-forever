@@ -3,8 +3,8 @@
   "producers": [
     {
       "source": "UI/Window.lua",
-      "sha256": "4554eb68acb5071f7ed4f0befead69102762b138f49d8d2eb96f37eb22db5209",
-      "review": "Read Text, Line, Headers, Refresh, Choose and Attach, and searched UI and Core for SetFont, SetNormalFontObject and any later font change: none. The title is GameFontNormalLarge and the empty-state line GameFontDisableSmall, set only through SetText. The three tab buttons and the Shopping list button inherit SharedButtonSmallTemplate: pinned Blizzard_SharedXML/Shared/Button/ThreeSliceButtonTemplate.xml gives normal GameFontNormal, highlight GameFontHighlight and disabled GameFontDisable, and Refresh disables the selected tab button, so all three states are bound. Row cells (GameFontHighlight), column headers (GameFontNormalSmall), the summary, the footer and the per-tab empty lines take dynamic data or text from other producers and are excluded.",
+      "sha256": "b15fd53c18c7660c61d5e3397e94ac0c2f3429f85b5a301f3112d3c4fd9249b2",
+      "review": "Read Text, Line, Headers, Refresh, Choose and Attach. The title uses GameFontNormalLarge and the empty-state line uses GameFontDisableSmall. PanelTopTabButtonTemplate inherits the normal GameFontNormalSmall, highlight GameFontHighlightSmall and disabled GameFontHighlightSmall from PanelTabButtonTemplate (Blizzard_SharedXML/Mainline/SharedUIPanelTemplates.xml). PanelTemplates_SelectTab also sets the disabled font to GameFontHighlightSmall. The Shopping list action still inherits SharedButtonSmallTemplate and its three font states from Blizzard_SharedXML/Shared/Button/ThreeSliceButtonTemplate.xml. Row cells, headers, summary, footer and per-tab empty lines take dynamic data or text from other producers and are excluded.",
       "bindings": [
         {
           "font": "GameFontNormalLarge",
@@ -17,48 +17,48 @@
           "phrase": "Counting what your characters can make"
         },
         {
-          "font": "GameFontNormal",
-          "widget": "tab buttons (normal)",
+          "font": "GameFontNormalSmall",
+          "widget": "top tabs (normal)",
           "phrase": "Craft now"
         },
         {
-          "font": "GameFontHighlight",
-          "widget": "tab buttons (highlight)",
+          "font": "GameFontHighlightSmall",
+          "widget": "top tabs (highlight)",
           "phrase": "Craft now"
         },
         {
-          "font": "GameFontDisable",
-          "widget": "tab buttons (disabled)",
+          "font": "GameFontHighlightSmall",
+          "widget": "top tabs (disabled)",
           "phrase": "Craft now"
         },
         {
-          "font": "GameFontNormal",
-          "widget": "tab buttons (normal)",
+          "font": "GameFontNormalSmall",
+          "widget": "top tabs (normal)",
           "phrase": "Shopping"
         },
         {
-          "font": "GameFontHighlight",
-          "widget": "tab buttons (highlight)",
+          "font": "GameFontHighlightSmall",
+          "widget": "top tabs (highlight)",
           "phrase": "Shopping"
         },
         {
-          "font": "GameFontDisable",
-          "widget": "tab buttons (disabled)",
+          "font": "GameFontHighlightSmall",
+          "widget": "top tabs (disabled)",
           "phrase": "Shopping"
         },
         {
-          "font": "GameFontNormal",
-          "widget": "tab buttons (normal)",
+          "font": "GameFontNormalSmall",
+          "widget": "top tabs (normal)",
           "phrase": "Characters"
         },
         {
-          "font": "GameFontHighlight",
-          "widget": "tab buttons (highlight)",
+          "font": "GameFontHighlightSmall",
+          "widget": "top tabs (highlight)",
           "phrase": "Characters"
         },
         {
-          "font": "GameFontDisable",
-          "widget": "tab buttons (disabled)",
+          "font": "GameFontHighlightSmall",
+          "widget": "top tabs (disabled)",
           "phrase": "Characters"
         },
         {

@@ -31,6 +31,8 @@ read_globals = {
 	"GetRealmName",
 	"GetServerTime",
 	"InCombatLockdown",
+	"PanelTemplates_DeselectTab",
+	"PanelTemplates_SelectTab",
 	"ProfessionsFrame",
 	"Syndicator",
 	"TSM_API",
