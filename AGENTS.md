@@ -61,7 +61,7 @@ WFA-28 exceptions, because no addon or public API holds them; what the client sh
 bundled value:
 
 - Recipe reagents, outputs and sell prices (`Data/Recipes.lua`, `tools/data/Thresholds.lua`) come from
-  the client's own DB2 tables through wago.tools at the pinned build, 1.60.1.70959; a generated file is never
+  the client's own DB2 tables through wago.tools at the pinned build, 1.60.1.71037; a generated file is never
   hand-edited.
 
 ## Standards
