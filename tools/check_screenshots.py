@@ -25,7 +25,6 @@ SOURCES = (
     "Locales/enUS.lua",
     "media/Icon.tga",
     "tests/sim/professions_page_scenario.lua",
-    "tools/forever-core.txt",
     "tools/screenshots.py",
     "UI/Characters.lua",
     "UI/CraftNow.lua",
