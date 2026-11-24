@@ -62,7 +62,7 @@ jobs:
           python3 tools/check_generated.py --offline
       # Every tool version below lives in this checkout's tools/toolchain.json, which the action reads (its manifest
       # input defaults to that file, resolved against the workspace) and installs and verifies each pin from.
-      - uses: cjber/forever-core/.github/actions/toolchain@2596f68e68f9a727496a19f3f801c8a7039357d2 # main
+      - uses: cjber/forever-core/.github/actions/toolchain@3776350a0b7bd71448ac7a8db8bf58d60303b4d3 # main
         if: steps.pins.outputs.moved != ''
         with:
           tools: lua stylua
